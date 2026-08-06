@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConsequenciasRouteImport } from './routes/consequencias'
+import { Route as DiagramaRouteImport } from './routes/diagrama'
 import { Route as LocaisRouteImport } from './routes/locais'
 import { Route as PersonagensRouteImport } from './routes/personagens'
 import { Route as PistasRouteImport } from './routes/pistas'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const ConsequenciasRoute = ConsequenciasRouteImport.update({
   id: '/consequencias',
   path: '/consequencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagramaRoute = DiagramaRouteImport.update({
+  id: '/diagrama',
+  path: '/diagrama',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocaisRoute = LocaisRouteImport.update({
@@ -62,6 +68,7 @@ const TimelineRoute = TimelineRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/consequencias': typeof ConsequenciasRoute
+  '/diagrama': typeof DiagramaRoute
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/consequencias': typeof ConsequenciasRoute
+  '/diagrama': typeof DiagramaRoute
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/consequencias': typeof ConsequenciasRoute
+  '/diagrama': typeof DiagramaRoute
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/consequencias'
+    | '/diagrama'
     | '/locais'
     | '/personagens'
     | '/pistas'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/consequencias'
+    | '/diagrama'
     | '/locais'
     | '/personagens'
     | '/pistas'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/consequencias'
+    | '/diagrama'
     | '/locais'
     | '/personagens'
     | '/pistas'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConsequenciasRoute: typeof ConsequenciasRoute
+  DiagramaRoute: typeof DiagramaRoute
   LocaisRoute: typeof LocaisRoute
   PersonagensRoute: typeof PersonagensRoute
   PistasRoute: typeof PistasRoute
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/consequencias'
       fullPath: '/consequencias'
       preLoaderRoute: typeof ConsequenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagrama': {
+      id: '/diagrama'
+      path: '/diagrama'
+      fullPath: '/diagrama'
+      preLoaderRoute: typeof DiagramaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locais': {
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConsequenciasRoute: ConsequenciasRoute,
+  DiagramaRoute: DiagramaRoute,
   LocaisRoute: LocaisRoute,
   PersonagensRoute: PersonagensRoute,
   PistasRoute: PistasRoute,
