@@ -10,33 +10,154 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConsequenciasRouteImport } from './routes/consequencias'
+import { Route as DiagramaRouteImport } from './routes/diagrama'
+import { Route as EditarRouteImport } from './routes/editar'
+import { Route as LocaisRouteImport } from './routes/locais'
+import { Route as PersonagensRouteImport } from './routes/personagens'
+import { Route as PistasRouteImport } from './routes/pistas'
+import { Route as ResumoRouteImport } from './routes/resumo'
+import { Route as SessaoRouteImport } from './routes/sessao'
+import { Route as TimelineRouteImport } from './routes/timeline'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConsequenciasRoute = ConsequenciasRouteImport.update({
+  id: '/consequencias',
+  path: '/consequencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagramaRoute = DiagramaRouteImport.update({
+  id: '/diagrama',
+  path: '/diagrama',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditarRoute = EditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaisRoute = LocaisRouteImport.update({
+  id: '/locais',
+  path: '/locais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonagensRoute = PersonagensRouteImport.update({
+  id: '/personagens',
+  path: '/personagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PistasRoute = PistasRouteImport.update({
+  id: '/pistas',
+  path: '/pistas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResumoRoute = ResumoRouteImport.update({
+  id: '/resumo',
+  path: '/resumo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessaoRoute = SessaoRouteImport.update({
+  id: '/sessao',
+  path: '/sessao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimelineRoute = TimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/consequencias': typeof ConsequenciasRoute
+  '/diagrama': typeof DiagramaRoute
+  '/editar': typeof EditarRoute
+  '/locais': typeof LocaisRoute
+  '/personagens': typeof PersonagensRoute
+  '/pistas': typeof PistasRoute
+  '/resumo': typeof ResumoRoute
+  '/sessao': typeof SessaoRoute
+  '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/consequencias': typeof ConsequenciasRoute
+  '/diagrama': typeof DiagramaRoute
+  '/editar': typeof EditarRoute
+  '/locais': typeof LocaisRoute
+  '/personagens': typeof PersonagensRoute
+  '/pistas': typeof PistasRoute
+  '/resumo': typeof ResumoRoute
+  '/sessao': typeof SessaoRoute
+  '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/consequencias': typeof ConsequenciasRoute
+  '/diagrama': typeof DiagramaRoute
+  '/editar': typeof EditarRoute
+  '/locais': typeof LocaisRoute
+  '/personagens': typeof PersonagensRoute
+  '/pistas': typeof PistasRoute
+  '/resumo': typeof ResumoRoute
+  '/sessao': typeof SessaoRoute
+  '/timeline': typeof TimelineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/consequencias'
+    | '/diagrama'
+    | '/editar'
+    | '/locais'
+    | '/personagens'
+    | '/pistas'
+    | '/resumo'
+    | '/sessao'
+    | '/timeline'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/consequencias'
+    | '/diagrama'
+    | '/editar'
+    | '/locais'
+    | '/personagens'
+    | '/pistas'
+    | '/resumo'
+    | '/sessao'
+    | '/timeline'
+  id:
+    | '__root__'
+    | '/'
+    | '/consequencias'
+    | '/diagrama'
+    | '/editar'
+    | '/locais'
+    | '/personagens'
+    | '/pistas'
+    | '/resumo'
+    | '/sessao'
+    | '/timeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConsequenciasRoute: typeof ConsequenciasRoute
+  DiagramaRoute: typeof DiagramaRoute
+  EditarRoute: typeof EditarRoute
+  LocaisRoute: typeof LocaisRoute
+  PersonagensRoute: typeof PersonagensRoute
+  PistasRoute: typeof PistasRoute
+  ResumoRoute: typeof ResumoRoute
+  SessaoRoute: typeof SessaoRoute
+  TimelineRoute: typeof TimelineRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +169,84 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/consequencias': {
+      id: '/consequencias'
+      path: '/consequencias'
+      fullPath: '/consequencias'
+      preLoaderRoute: typeof ConsequenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagrama': {
+      id: '/diagrama'
+      path: '/diagrama'
+      fullPath: '/diagrama'
+      preLoaderRoute: typeof DiagramaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editar': {
+      id: '/editar'
+      path: '/editar'
+      fullPath: '/editar'
+      preLoaderRoute: typeof EditarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locais': {
+      id: '/locais'
+      path: '/locais'
+      fullPath: '/locais'
+      preLoaderRoute: typeof LocaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/personagens': {
+      id: '/personagens'
+      path: '/personagens'
+      fullPath: '/personagens'
+      preLoaderRoute: typeof PersonagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pistas': {
+      id: '/pistas'
+      path: '/pistas'
+      fullPath: '/pistas'
+      preLoaderRoute: typeof PistasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resumo': {
+      id: '/resumo'
+      path: '/resumo'
+      fullPath: '/resumo'
+      preLoaderRoute: typeof ResumoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessao': {
+      id: '/sessao'
+      path: '/sessao'
+      fullPath: '/sessao'
+      preLoaderRoute: typeof SessaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timeline': {
+      id: '/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConsequenciasRoute: ConsequenciasRoute,
+  DiagramaRoute: DiagramaRoute,
+  EditarRoute: EditarRoute,
+  LocaisRoute: LocaisRoute,
+  PersonagensRoute: PersonagensRoute,
+  PistasRoute: PistasRoute,
+  ResumoRoute: ResumoRoute,
+  SessaoRoute: SessaoRoute,
+  TimelineRoute: TimelineRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
