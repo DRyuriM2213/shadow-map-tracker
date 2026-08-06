@@ -190,7 +190,7 @@ function Dashboard() {
   );
 }
 
-function Info({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Info({ label, value, tone }: { label: string; value: string; tone?: string | undefined }) {
   return (
     <div className="rounded-sm border border-border bg-secondary/40 p-3">
       <p className="stamp text-muted-foreground">{label}</p>
