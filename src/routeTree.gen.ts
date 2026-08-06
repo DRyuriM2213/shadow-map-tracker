@@ -14,6 +14,7 @@ import { Route as ConsequenciasRouteImport } from './routes/consequencias'
 import { Route as LocaisRouteImport } from './routes/locais'
 import { Route as PersonagensRouteImport } from './routes/personagens'
 import { Route as PistasRouteImport } from './routes/pistas'
+import { Route as ResumoRouteImport } from './routes/resumo'
 import { Route as SessaoRouteImport } from './routes/sessao'
 import { Route as TimelineRouteImport } from './routes/timeline'
 
@@ -42,6 +43,11 @@ const PistasRoute = PistasRouteImport.update({
   path: '/pistas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResumoRoute = ResumoRouteImport.update({
+  id: '/resumo',
+  path: '/resumo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SessaoRoute = SessaoRouteImport.update({
   id: '/sessao',
   path: '/sessao',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
+  '/resumo': typeof ResumoRoute
   '/sessao': typeof SessaoRoute
   '/timeline': typeof TimelineRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
+  '/resumo': typeof ResumoRoute
   '/sessao': typeof SessaoRoute
   '/timeline': typeof TimelineRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
+  '/resumo': typeof ResumoRoute
   '/sessao': typeof SessaoRoute
   '/timeline': typeof TimelineRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/locais'
     | '/personagens'
     | '/pistas'
+    | '/resumo'
     | '/sessao'
     | '/timeline'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/locais'
     | '/personagens'
     | '/pistas'
+    | '/resumo'
     | '/sessao'
     | '/timeline'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/locais'
     | '/personagens'
     | '/pistas'
+    | '/resumo'
     | '/sessao'
     | '/timeline'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   LocaisRoute: typeof LocaisRoute
   PersonagensRoute: typeof PersonagensRoute
   PistasRoute: typeof PistasRoute
+  ResumoRoute: typeof ResumoRoute
   SessaoRoute: typeof SessaoRoute
   TimelineRoute: typeof TimelineRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PistasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/resumo': {
+      id: '/resumo'
+      path: '/resumo'
+      fullPath: '/resumo'
+      preLoaderRoute: typeof ResumoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sessao': {
       id: '/sessao'
       path: '/sessao'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   LocaisRoute: LocaisRoute,
   PersonagensRoute: PersonagensRoute,
   PistasRoute: PistasRoute,
+  ResumoRoute: ResumoRoute,
   SessaoRoute: SessaoRoute,
   TimelineRoute: TimelineRoute,
 }
