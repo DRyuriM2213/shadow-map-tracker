@@ -58,7 +58,7 @@ export interface TestDef {
   failure: string;
   criticalFailure: string;
   fallback: string;
-  clueId?: string;
+  clueId?: string | undefined;
 }
 
 export interface Clue {
@@ -72,7 +72,7 @@ export interface Clue {
   dayAvailable: 1 | 2;
   prerequisites: string;
   actionRequired: string;
-  testId?: string;
+  testId?: string | undefined;
   successResult: string;
   failureResult: string;
   consequenceIds: string[];
@@ -107,8 +107,8 @@ export interface Choice {
   title: string;
   description: string;
   routeColor: RouteColor;
-  requirements?: string;
-  effects?: string;
+  requirements?: string | undefined;
+  effects?: string | undefined;
   nextSceneId: string;
 }
 
@@ -117,7 +117,7 @@ export interface Scene {
   title: string;
   day: 1 | 2;
   time: string;
-  locationId?: string;
+  locationId?: string | undefined;
   sceneType: "abertura" | "exploracao" | "decisao" | "evento" | "convergencia" | "encerramento";
   mandatory: boolean;
   masterDescription: string;
@@ -176,8 +176,8 @@ export interface LogEntry {
   time: string;
   actionType: string;
   description: string;
-  detail?: string;
-  route?: RouteColor;
+  detail?: string | undefined;
+  route?: RouteColor | undefined;
   createdAt: string;
 }
 

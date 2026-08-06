@@ -19,7 +19,7 @@ export interface SessionState {
   day: 1 | 2;
   time: string;
   currentSceneId: string;
-  currentLocationId?: string;
+  currentLocationId?: string | undefined;
   attentionLevel: number;
   evidenceCount: number;
   percyExposure: number;
