@@ -26,8 +26,9 @@ function DiagramaPage() {
   const { nodes, edges } = useMemo(() => {
     const byDay: Record<number, number> = { 1: 0, 2: 0 };
     const nodes: Node[] = SCENES.map((s) => {
-      const i = byDay[s.day]++;
-      const visited = session.visitedScenes.includes(s.id);
+      const i = byDay[s.day] ?? 0;
+      byDay[s.day] = i + 1;
+      const visited = session.log.some((l) => l.detail === s.id || l.description.includes(s.title));
       const current = session.currentSceneId === s.id;
       return {
         id: s.id,
@@ -52,10 +53,10 @@ function DiagramaPage() {
           source: s.id,
           target: c.nextSceneId!,
           label: c.title,
-          animated: session.chosenChoices.includes(c.id),
+          animated: session.routeStatus[c.id] === "percorrida",
           style: {
-            stroke: routeHex[c.route] ?? "#6b6157",
-            strokeWidth: session.chosenChoices.includes(c.id) ? 3 : 1.5,
+            stroke: routeHex[c.routeColor] ?? "#6b6157",
+            strokeWidth: session.routeStatus[c.id] === "percorrida" ? 3 : 1.5,
             opacity: session.routeStatus[c.id] === "ignorada" ? 0.3 : 1,
           },
           labelStyle: { fontSize: 10, fill: "#c9c1b5" },
