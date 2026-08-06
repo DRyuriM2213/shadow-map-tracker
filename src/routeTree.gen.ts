@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LocaisRouteImport } from './routes/locais'
 import { Route as SessaoRouteImport } from './routes/sessao'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaisRoute = LocaisRouteImport.update({
+  id: '/locais',
+  path: '/locais',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessaoRoute = SessaoRouteImport.update({
@@ -25,27 +31,31 @@ const SessaoRoute = SessaoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/locais': typeof LocaisRoute
   '/sessao': typeof SessaoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/locais': typeof LocaisRoute
   '/sessao': typeof SessaoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/locais': typeof LocaisRoute
   '/sessao': typeof SessaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sessao'
+  fullPaths: '/' | '/locais' | '/sessao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sessao'
-  id: '__root__' | '/' | '/sessao'
+  to: '/' | '/locais' | '/sessao'
+  id: '__root__' | '/' | '/locais' | '/sessao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LocaisRoute: typeof LocaisRoute
   SessaoRoute: typeof SessaoRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locais': {
+      id: '/locais'
+      path: '/locais'
+      fullPath: '/locais'
+      preLoaderRoute: typeof LocaisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sessao': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LocaisRoute: LocaisRoute,
   SessaoRoute: SessaoRoute,
 }
 export const routeTree = rootRouteImport
