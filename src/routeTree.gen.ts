@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConsequenciasRouteImport } from './routes/consequencias'
 import { Route as LocaisRouteImport } from './routes/locais'
 import { Route as PistasRouteImport } from './routes/pistas'
 import { Route as SessaoRouteImport } from './routes/sessao'
@@ -18,6 +19,11 @@ import { Route as TimelineRouteImport } from './routes/timeline'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsequenciasRoute = ConsequenciasRouteImport.update({
+  id: '/consequencias',
+  path: '/consequencias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocaisRoute = LocaisRouteImport.update({
@@ -43,6 +49,7 @@ const TimelineRoute = TimelineRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/consequencias': typeof ConsequenciasRoute
   '/locais': typeof LocaisRoute
   '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/consequencias': typeof ConsequenciasRoute
   '/locais': typeof LocaisRoute
   '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/consequencias': typeof ConsequenciasRoute
   '/locais': typeof LocaisRoute
   '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
@@ -65,14 +74,23 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/locais' | '/pistas' | '/sessao' | '/timeline'
+  fullPaths:
+    '/' | '/consequencias' | '/locais' | '/pistas' | '/sessao' | '/timeline'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/locais' | '/pistas' | '/sessao' | '/timeline'
-  id: '__root__' | '/' | '/locais' | '/pistas' | '/sessao' | '/timeline'
+  to: '/' | '/consequencias' | '/locais' | '/pistas' | '/sessao' | '/timeline'
+  id:
+    | '__root__'
+    | '/'
+    | '/consequencias'
+    | '/locais'
+    | '/pistas'
+    | '/sessao'
+    | '/timeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ConsequenciasRoute: typeof ConsequenciasRoute
   LocaisRoute: typeof LocaisRoute
   PistasRoute: typeof PistasRoute
   SessaoRoute: typeof SessaoRoute
@@ -86,6 +104,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consequencias': {
+      id: '/consequencias'
+      path: '/consequencias'
+      fullPath: '/consequencias'
+      preLoaderRoute: typeof ConsequenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locais': {
@@ -121,6 +146,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConsequenciasRoute: ConsequenciasRoute,
   LocaisRoute: LocaisRoute,
   PistasRoute: PistasRoute,
   SessaoRoute: SessaoRoute,
