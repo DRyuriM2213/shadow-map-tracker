@@ -53,10 +53,10 @@ function DiagramaPage() {
           source: s.id,
           target: c.nextSceneId!,
           label: c.title,
-          animated: session.routeStatus[c.id] === "percorrida",
+          animated: session.routeStatus[c.id] === "escolhida",
           style: {
             stroke: routeHex[c.routeColor] ?? "#6b6157",
-            strokeWidth: session.routeStatus[c.id] === "percorrida" ? 3 : 1.5,
+            strokeWidth: session.routeStatus[c.id] === "escolhida" ? 3 : 1.5,
             opacity: session.routeStatus[c.id] === "ignorada" ? 0.3 : 1,
           },
           labelStyle: { fontSize: 10, fill: "#c9c1b5" },
