@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LocaisRouteImport } from './routes/locais'
+import { Route as PistasRouteImport } from './routes/pistas'
 import { Route as SessaoRouteImport } from './routes/sessao'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const LocaisRoute = LocaisRouteImport.update({
   path: '/locais',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PistasRoute = PistasRouteImport.update({
+  id: '/pistas',
+  path: '/pistas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SessaoRoute = SessaoRouteImport.update({
   id: '/sessao',
   path: '/sessao',
@@ -32,30 +38,34 @@ const SessaoRoute = SessaoRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/locais': typeof LocaisRoute
+  '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/locais': typeof LocaisRoute
+  '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/locais': typeof LocaisRoute
+  '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/locais' | '/sessao'
+  fullPaths: '/' | '/locais' | '/pistas' | '/sessao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/locais' | '/sessao'
-  id: '__root__' | '/' | '/locais' | '/sessao'
+  to: '/' | '/locais' | '/pistas' | '/sessao'
+  id: '__root__' | '/' | '/locais' | '/pistas' | '/sessao'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LocaisRoute: typeof LocaisRoute
+  PistasRoute: typeof PistasRoute
   SessaoRoute: typeof SessaoRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pistas': {
+      id: '/pistas'
+      path: '/pistas'
+      fullPath: '/pistas'
+      preLoaderRoute: typeof PistasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sessao': {
       id: '/sessao'
       path: '/sessao'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LocaisRoute: LocaisRoute,
+  PistasRoute: PistasRoute,
   SessaoRoute: SessaoRoute,
 }
 export const routeTree = rootRouteImport
