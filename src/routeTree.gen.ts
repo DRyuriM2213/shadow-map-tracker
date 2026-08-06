@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConsequenciasRouteImport } from './routes/consequencias'
 import { Route as DiagramaRouteImport } from './routes/diagrama'
+import { Route as EditarRouteImport } from './routes/editar'
 import { Route as LocaisRouteImport } from './routes/locais'
 import { Route as PersonagensRouteImport } from './routes/personagens'
 import { Route as PistasRouteImport } from './routes/pistas'
@@ -32,6 +33,11 @@ const ConsequenciasRoute = ConsequenciasRouteImport.update({
 const DiagramaRoute = DiagramaRouteImport.update({
   id: '/diagrama',
   path: '/diagrama',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditarRoute = EditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocaisRoute = LocaisRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/consequencias': typeof ConsequenciasRoute
   '/diagrama': typeof DiagramaRoute
+  '/editar': typeof EditarRoute
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/consequencias': typeof ConsequenciasRoute
   '/diagrama': typeof DiagramaRoute
+  '/editar': typeof EditarRoute
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/consequencias': typeof ConsequenciasRoute
   '/diagrama': typeof DiagramaRoute
+  '/editar': typeof EditarRoute
   '/locais': typeof LocaisRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/consequencias'
     | '/diagrama'
+    | '/editar'
     | '/locais'
     | '/personagens'
     | '/pistas'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/consequencias'
     | '/diagrama'
+    | '/editar'
     | '/locais'
     | '/personagens'
     | '/pistas'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/consequencias'
     | '/diagrama'
+    | '/editar'
     | '/locais'
     | '/personagens'
     | '/pistas'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ConsequenciasRoute: typeof ConsequenciasRoute
   DiagramaRoute: typeof DiagramaRoute
+  EditarRoute: typeof EditarRoute
   LocaisRoute: typeof LocaisRoute
   PersonagensRoute: typeof PersonagensRoute
   PistasRoute: typeof PistasRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/diagrama'
       fullPath: '/diagrama'
       preLoaderRoute: typeof DiagramaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editar': {
+      id: '/editar'
+      path: '/editar'
+      fullPath: '/editar'
+      preLoaderRoute: typeof EditarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/locais': {
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ConsequenciasRoute: ConsequenciasRoute,
   DiagramaRoute: DiagramaRoute,
+  EditarRoute: EditarRoute,
   LocaisRoute: LocaisRoute,
   PersonagensRoute: PersonagensRoute,
   PistasRoute: PistasRoute,
