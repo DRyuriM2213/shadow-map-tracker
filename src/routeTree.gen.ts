@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LocaisRouteImport } from './routes/locais'
 import { Route as PistasRouteImport } from './routes/pistas'
 import { Route as SessaoRouteImport } from './routes/sessao'
+import { Route as TimelineRouteImport } from './routes/timeline'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const SessaoRoute = SessaoRouteImport.update({
   path: '/sessao',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TimelineRoute = TimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/locais': typeof LocaisRoute
   '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
+  '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/locais': typeof LocaisRoute
   '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
+  '/timeline': typeof TimelineRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/locais': typeof LocaisRoute
   '/pistas': typeof PistasRoute
   '/sessao': typeof SessaoRoute
+  '/timeline': typeof TimelineRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/locais' | '/pistas' | '/sessao'
+  fullPaths: '/' | '/locais' | '/pistas' | '/sessao' | '/timeline'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/locais' | '/pistas' | '/sessao'
-  id: '__root__' | '/' | '/locais' | '/pistas' | '/sessao'
+  to: '/' | '/locais' | '/pistas' | '/sessao' | '/timeline'
+  id: '__root__' | '/' | '/locais' | '/pistas' | '/sessao' | '/timeline'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   LocaisRoute: typeof LocaisRoute
   PistasRoute: typeof PistasRoute
   SessaoRoute: typeof SessaoRoute
+  TimelineRoute: typeof TimelineRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessaoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/timeline': {
+      id: '/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   LocaisRoute: LocaisRoute,
   PistasRoute: PistasRoute,
   SessaoRoute: SessaoRoute,
+  TimelineRoute: TimelineRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
