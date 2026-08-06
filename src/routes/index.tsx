@@ -209,7 +209,7 @@ function Meter({
   label: string;
   value: number;
   max: number;
-  legend?: string[];
+  legend?: string[] | undefined;
   onChange: (v: number) => void;
 }) {
   return (
