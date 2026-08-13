@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Shell } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CLUES, LOCATIONS, PLAYERS, TESTS } from "@/data/campaign";
 import { useCampaign } from "@/store/campaign";
