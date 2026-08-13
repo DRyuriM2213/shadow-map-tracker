@@ -37,12 +37,14 @@ const STATUS_LIST: ClueStatus[] = [
 function PistasPage() {
   const session = useCampaign((s) => s.session);
   const store = useCampaign();
+  const [busca, setBusca] = useState("");
   const [fLocal, setFLocal] = useState("todos");
   const [fDia, setFDia] = useState("todos");
   const [fStatus, setFStatus] = useState("todos");
   const [fImp, setFImp] = useState("todos");
   const [fRota, setFRota] = useState("todos");
   const [fPersonagem, setFPersonagem] = useState("todos");
+  const [fTipo, setFTipo] = useState("todos");
   const [aberto, setAberto] = useState<string | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
 
@@ -50,11 +52,27 @@ function PistasPage() {
     () =>
       CLUES.filter((c) => {
         const st = session.clueStatus[c.id] ?? "escondida";
-        if (fLocal !== "todos" && c.mainLocationId !== fLocal) return false;
-        if (fDia !== "todos" && String(c.dayAvailable) !== fDia) return false;
+        const alvo = busca.trim().toLowerCase();
+        if (
+          alvo &&
+          !`${c.name} ${c.category} ${c.playerDescription} ${c.masterMeaning} ${c.microLocation} ${c.exactLocation} ${c.suggestedSkill} ${c.sourceDocument} ${c.id}`
+            .toLowerCase()
+            .includes(alvo)
+        )
+          return false;
+        if (
+          fLocal !== "todos" &&
+          c.mainLocationId !== fLocal &&
+          !c.alternativeLocationIds.includes(fLocal)
+        )
+          return false;
+        if (fDia !== "todos" && String(c.recommendedDay) !== fDia) return false;
         if (fStatus !== "todos" && st !== fStatus) return false;
         if (fImp !== "todos" && c.importance !== fImp) return false;
         if (fRota !== "todos" && c.route !== fRota) return false;
+        if (fTipo === "secreta" && !c.isSecret) return false;
+        if (fTipo === "futura" && !c.isFuture) return false;
+        if (fTipo === "pendente" && ["encontrada", "interpretada", "contingencia"].includes(st)) return false;
         if (fPersonagem !== "todos") {
           const notas = session.notes.filter((n) => n.targetId === c.id);
           const nome = PLAYERS.find((p) => p.id === fPersonagem)?.characterName ?? "";
@@ -62,8 +80,9 @@ function PistasPage() {
         }
         return true;
       }),
-    [fLocal, fDia, fStatus, fImp, fRota, fPersonagem, session.clueStatus, session.notes],
+    [busca, fLocal, fDia, fStatus, fImp, fRota, fTipo, fPersonagem, session.clueStatus, session.notes],
   );
+
 
   const clue = CLUES.find((c) => c.id === aberto);
   const obrigatoriasPerdidas = CLUES.filter(
