@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Shell } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CLUES, LOCATIONS, PLAYERS, TESTS } from "@/data/campaign";
 import { useCampaign } from "@/store/campaign";
@@ -37,12 +38,14 @@ const STATUS_LIST: ClueStatus[] = [
 function PistasPage() {
   const session = useCampaign((s) => s.session);
   const store = useCampaign();
+  const [busca, setBusca] = useState("");
   const [fLocal, setFLocal] = useState("todos");
   const [fDia, setFDia] = useState("todos");
   const [fStatus, setFStatus] = useState("todos");
   const [fImp, setFImp] = useState("todos");
   const [fRota, setFRota] = useState("todos");
   const [fPersonagem, setFPersonagem] = useState("todos");
+  const [fTipo, setFTipo] = useState("todos");
   const [aberto, setAberto] = useState<string | null>(null);
   const [testId, setTestId] = useState<string | null>(null);
 
@@ -50,11 +53,27 @@ function PistasPage() {
     () =>
       CLUES.filter((c) => {
         const st = session.clueStatus[c.id] ?? "escondida";
-        if (fLocal !== "todos" && c.mainLocationId !== fLocal) return false;
-        if (fDia !== "todos" && String(c.dayAvailable) !== fDia) return false;
+        const alvo = busca.trim().toLowerCase();
+        if (
+          alvo &&
+          !`${c.name} ${c.category} ${c.playerDescription} ${c.masterMeaning} ${c.microLocation} ${c.exactLocation} ${c.suggestedSkill} ${c.sourceDocument} ${c.id}`
+            .toLowerCase()
+            .includes(alvo)
+        )
+          return false;
+        if (
+          fLocal !== "todos" &&
+          c.mainLocationId !== fLocal &&
+          !c.alternativeLocationIds.includes(fLocal)
+        )
+          return false;
+        if (fDia !== "todos" && String(c.recommendedDay) !== fDia) return false;
         if (fStatus !== "todos" && st !== fStatus) return false;
         if (fImp !== "todos" && c.importance !== fImp) return false;
         if (fRota !== "todos" && c.route !== fRota) return false;
+        if (fTipo === "secreta" && !c.isSecret) return false;
+        if (fTipo === "futura" && !c.isFuture) return false;
+        if (fTipo === "pendente" && ["encontrada", "interpretada", "contingencia"].includes(st)) return false;
         if (fPersonagem !== "todos") {
           const notas = session.notes.filter((n) => n.targetId === c.id);
           const nome = PLAYERS.find((p) => p.id === fPersonagem)?.characterName ?? "";
@@ -62,8 +81,9 @@ function PistasPage() {
         }
         return true;
       }),
-    [fLocal, fDia, fStatus, fImp, fRota, fPersonagem, session.clueStatus, session.notes],
+    [busca, fLocal, fDia, fStatus, fImp, fRota, fTipo, fPersonagem, session.clueStatus, session.notes],
   );
+
 
   const clue = CLUES.find((c) => c.id === aberto);
   const obrigatoriasPerdidas = CLUES.filter(
@@ -73,13 +93,22 @@ function PistasPage() {
   return (
     <Shell>
       <div className="mx-auto max-w-7xl space-y-5">
-        <header>
-          <h1 className="text-3xl font-semibold">Quadro de Pistas</h1>
-          <p className="text-sm text-muted-foreground">
-            {CLUES.length} pistas cadastradas nos Dias 1 e 2. Pistas obrigatórias nunca desaparecem: se forem perdidas, o
-            sistema sugere contingências.
-          </p>
+        <header className="flex flex-wrap items-end gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold">Catálogo global de pistas</h1>
+            <p className="text-sm text-muted-foreground">
+              {CLUES.length} pistas visíveis a qualquer momento — o dia é apenas uma recomendação. Pistas obrigatórias
+              nunca desaparecem: se forem perdidas, o sistema sugere contingências.
+            </p>
+          </div>
+          <Input
+            className="ml-auto max-w-sm"
+            placeholder="Buscar por nome, local exato, perícia, documento…"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
         </header>
+
 
         {obrigatoriasPerdidas.length > 0 && (
           <div className="rounded-sm border border-destructive bg-destructive/10 p-4">
@@ -110,6 +139,7 @@ function PistasPage() {
           <Filtro label="Importância" value={fImp} onChange={setFImp} options={[["todos", "Todas"], ["ambiental", "Ambiental"], ["secundaria", "Secundária"], ["importante", "Importante"], ["obrigatoria", "Obrigatória"]]} />
           <Filtro label="Rota" value={fRota} onChange={setFRota} options={[["todos", "Todas"], ["amarelo", "Amarelo"], ["azul", "Azul"], ["verde", "Verde"], ["roxo", "Roxo"], ["vermelho", "Vermelho"], ["cinza", "Cinza"], ["verde-claro", "Verde-claro"], ["preto", "Preto"]]} />
           <Filtro label="Personagem (notas)" value={fPersonagem} onChange={setFPersonagem} options={[["todos", "Todos"], ...PLAYERS.map((p) => [p.id, p.characterName] as [string, string])]} />
+          <Filtro label="Tipo" value={fTipo} onChange={setFTipo} options={[["todos", "Todas"], ["pendente", "Ainda não entregues"], ["secreta", "Secretas"], ["futura", "Futuras"]]} />
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -127,13 +157,20 @@ function PistasPage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{c.playerDescription}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                  <span className="rounded-sm bg-primary px-2 py-0.5 font-mono font-bold text-primary-foreground">
+                    DT {session.dcOverrides[c.id] ?? c.dc}
+                  </span>
+                  <span className="rounded-sm bg-secondary px-2 py-0.5">{c.suggestedSkill}</span>
                   <span className="rounded-sm bg-secondary px-2 py-0.5">{clueStatusLabel[st]}</span>
                   <span className="rounded-sm bg-secondary px-2 py-0.5">{importanceLabel[c.importance]}</span>
-                  <span className="rounded-sm bg-secondary px-2 py-0.5">Dia {c.dayAvailable}</span>
+                  <span className="rounded-sm bg-secondary px-2 py-0.5">Dia rec. {c.recommendedDay}</span>
                   <span className="rounded-sm bg-secondary px-2 py-0.5">
                     {LOCATIONS.find((l) => l.id === c.mainLocationId)?.name}
                   </span>
+                  {c.isSecret && <span className="rounded-sm bg-secondary px-2 py-0.5 text-route-roxo">secreta</span>}
+                  {c.isFuture && <span className="rounded-sm bg-secondary px-2 py-0.5 text-route-azul">futura</span>}
                 </div>
+
               </button>
             );
           })}

@@ -61,6 +61,8 @@ export interface TestDef {
   clueId?: string | undefined;
 }
 
+export type ClueMedium = "documental" | "fisica" | "digital" | "social" | "ambiental";
+
 export interface Clue {
   id: string;
   name: string;
@@ -69,12 +71,25 @@ export interface Clue {
   masterMeaning: string;
   mainLocationId: string;
   alternativeLocationIds: string[];
+  /** Metadado de recomendação apenas — nunca bloqueia consulta. */
   dayAvailable: 1 | 2;
+  recommendedDay: 1 | 2;
+  microLocation: string;
+  exactLocation: string;
+  suggestedSkill: string;
+  dc: number;
+  discoveryTrigger: string;
   prerequisites: string;
   actionRequired: string;
   testId?: string | undefined;
   successResult: string;
+  partialSuccess: string;
   failureResult: string;
+  criticalFailure: string;
+  sourceDocument: string;
+  isSecret: boolean;
+  isFuture: boolean;
+  medium: ClueMedium;
   consequenceIds: string[];
   relatedClueIds: string[];
   unlocks: string;
@@ -82,6 +97,7 @@ export interface Clue {
   fallbackOptions: string[];
   route: RouteColor;
 }
+
 
 export interface CampaignLocation {
   id: string;

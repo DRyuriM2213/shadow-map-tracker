@@ -14,6 +14,7 @@ import { Route as ConsequenciasRouteImport } from './routes/consequencias'
 import { Route as DiagramaRouteImport } from './routes/diagrama'
 import { Route as EditarRouteImport } from './routes/editar'
 import { Route as LocaisRouteImport } from './routes/locais'
+import { Route as MapaRouteImport } from './routes/mapa'
 import { Route as PersonagensRouteImport } from './routes/personagens'
 import { Route as PistasRouteImport } from './routes/pistas'
 import { Route as ResumoRouteImport } from './routes/resumo'
@@ -43,6 +44,11 @@ const EditarRoute = EditarRouteImport.update({
 const LocaisRoute = LocaisRouteImport.update({
   id: '/locais',
   path: '/locais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapaRoute = MapaRouteImport.update({
+  id: '/mapa',
+  path: '/mapa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PersonagensRoute = PersonagensRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/diagrama': typeof DiagramaRoute
   '/editar': typeof EditarRoute
   '/locais': typeof LocaisRoute
+  '/mapa': typeof MapaRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
   '/resumo': typeof ResumoRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/diagrama': typeof DiagramaRoute
   '/editar': typeof EditarRoute
   '/locais': typeof LocaisRoute
+  '/mapa': typeof MapaRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
   '/resumo': typeof ResumoRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/diagrama': typeof DiagramaRoute
   '/editar': typeof EditarRoute
   '/locais': typeof LocaisRoute
+  '/mapa': typeof MapaRoute
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
   '/resumo': typeof ResumoRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/diagrama'
     | '/editar'
     | '/locais'
+    | '/mapa'
     | '/personagens'
     | '/pistas'
     | '/resumo'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/diagrama'
     | '/editar'
     | '/locais'
+    | '/mapa'
     | '/personagens'
     | '/pistas'
     | '/resumo'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/diagrama'
     | '/editar'
     | '/locais'
+    | '/mapa'
     | '/personagens'
     | '/pistas'
     | '/resumo'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   DiagramaRoute: typeof DiagramaRoute
   EditarRoute: typeof EditarRoute
   LocaisRoute: typeof LocaisRoute
+  MapaRoute: typeof MapaRoute
   PersonagensRoute: typeof PersonagensRoute
   PistasRoute: typeof PistasRoute
   ResumoRoute: typeof ResumoRoute
@@ -195,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/locais'
       fullPath: '/locais'
       preLoaderRoute: typeof LocaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mapa': {
+      id: '/mapa'
+      path: '/mapa'
+      fullPath: '/mapa'
+      preLoaderRoute: typeof MapaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/personagens': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiagramaRoute: DiagramaRoute,
   EditarRoute: EditarRoute,
   LocaisRoute: LocaisRoute,
+  MapaRoute: MapaRoute,
   PersonagensRoute: PersonagensRoute,
   PistasRoute: PistasRoute,
   ResumoRoute: ResumoRoute,
@@ -250,3 +271,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
