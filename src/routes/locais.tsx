@@ -8,6 +8,7 @@ import { useCampaign } from "@/store/campaign";
 import { clueStatusLabel, locationStatusLabel, routeBorder, routeDot } from "@/lib/ui";
 import type { LocationStatus } from "@/lib/types";
 import { TestDialog } from "@/components/TestDialog";
+import { RoomInspector, cluesForLocation } from "@/components/RoomInspector";
 
 export const Route = createFileRoute("/locais")({
   head: () => ({
