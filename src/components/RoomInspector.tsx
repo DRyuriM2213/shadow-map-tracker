@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CLUES, LOCATIONS, TESTS } from "@/data/campaign";
+import { CLUES, LOCATIONS, TESTS } from "@/data/campaignFull";
 import { useCampaign } from "@/store/campaign";
 import { clueStatusLabel, importanceLabel, locationStatusLabel, routeDot } from "@/lib/ui";
 import { DC_PRESETS } from "@/lib/clock";
@@ -44,7 +44,6 @@ export function cluesForLocation(locationId: string): Clue[] {
   return [...ids].map((id) => CLUES.find((c) => c.id === id)).filter((c): c is Clue => !!c);
 }
 
-/** Inspector de sala: ferramenta principal de exploração livre. */
 export function RoomInspector({
   locationId,
   compact = false,
@@ -80,9 +79,7 @@ export function RoomInspector({
             onChange={(e) => setLocationStatus(local.id, e.target.value as LocationStatus)}
           >
             {LOC_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {locationStatusLabel[s]}
-              </option>
+              <option key={s} value={s}>{locationStatusLabel[s]}</option>
             ))}
           </select>
         </div>
@@ -93,13 +90,9 @@ export function RoomInspector({
       <div className="rounded-sm border border-primary/50 p-3">
         <p className="stamp text-primary">Nesta sala eles podem encontrar</p>
         <div className="mt-3 space-y-3">
-          {achados.map((c) => (
-            <FindingCard key={c.id} clue={c} onTest={setTestId} />
-          ))}
+          {achados.map((c) => <FindingCard key={c.id} clue={c} onTest={setTestId} />)}
           {achados.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma pista cadastrada aqui. Use o quadro global de pistas para entregar algo manualmente.
-            </p>
+            <p className="text-sm text-muted-foreground">Nenhuma pista cadastrada aqui. Use o quadro global de pistas para entregar algo manualmente.</p>
           )}
         </div>
       </div>
@@ -142,10 +135,7 @@ function FindingCard({ clue, onTest }: { clue: Clue; onTest: (id: string) => voi
   const st = session.clueStatus[clue.id] ?? "escondida";
   const dc = session.dcOverrides[clue.id] ?? clue.dc;
   const autoPause = session.autoPauseOnTest;
-
-  const pause = () => {
-    if (autoPause) setClockRunning(false);
-  };
+  const pause = () => { if (autoPause) setClockRunning(false); };
 
   return (
     <div className="rounded-sm border border-border bg-card/40 p-3">
@@ -157,16 +147,10 @@ function FindingCard({ clue, onTest }: { clue: Clue; onTest: (id: string) => voi
             {clue.isSecret && <span className="stamp ml-2 text-route-roxo">secreta</span>}
             {clue.isFuture && <span className="stamp ml-2 text-route-azul">futura</span>}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {clue.microLocation || clue.exactLocation || "Local exato não definido"}
-          </p>
+          <p className="text-xs text-muted-foreground">{clue.microLocation || clue.exactLocation || "Local exato não definido"}</p>
         </div>
-        <span className="shrink-0 rounded-sm bg-primary px-2 py-0.5 font-mono text-sm font-bold text-primary-foreground">
-          DT {dc}
-        </span>
-        <span className="shrink-0 rounded-sm bg-secondary px-2 py-0.5 text-[11px]">
-          {clueStatusLabel[st]}
-        </span>
+        <span className="shrink-0 rounded-sm bg-primary px-2 py-0.5 font-mono text-sm font-bold text-primary-foreground">DT {dc}</span>
+        <span className="shrink-0 rounded-sm bg-secondary px-2 py-0.5 text-[11px]">{clueStatusLabel[st]}</span>
       </button>
 
       {aberto && (
@@ -178,7 +162,7 @@ function FindingCard({ clue, onTest }: { clue: Clue; onTest: (id: string) => voi
             <L k="Perícia sugerida" v={clue.suggestedSkill} />
             <L k="Importância" v={importanceLabel[clue.importance] ?? clue.importance} />
             <L k="Documento associado" v={clue.sourceDocument || "—"} />
-            <L k="Dia recomendado" v={`Dia ${clue.recommendedDay} (apenas recomendação)`} />
+            <L k="Dia recomendado" v={clue.recommendedDay ? `Dia ${clue.recommendedDay} (apenas recomendação)` : "Livre / apenas metadado"} />
           </div>
           <L k="Sucesso" v={clue.successResult} tone="text-route-verde-claro" />
           <L k="Sucesso parcial" v={clue.partialSuccess} tone="text-route-amarelo" />
@@ -186,61 +170,30 @@ function FindingCard({ clue, onTest }: { clue: Clue; onTest: (id: string) => voi
           <L k="Falha crítica" v={clue.criticalFailure} tone="text-destructive" />
           <L k="Consequência / desbloqueio" v={clue.unlocks || "—"} />
           <p className="rounded-sm border border-route-preto bg-black/40 p-2">
-            <span className="stamp text-route-cinza">Segredo do mestre: </span>
-            {clue.masterMeaning || "—"}
+            <span className="stamp text-route-cinza">Segredo do mestre: </span>{clue.masterMeaning || "—"}
           </p>
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {clue.testId && (
-              <Button
-                size="sm"
-                onClick={() => {
-                  pause();
-                  onTest(clue.testId!);
-                }}
-              >
-                ABRIR TESTE
-              </Button>
+              <Button size="sm" onClick={() => { pause(); onTest(clue.testId!); }}>ABRIR TESTE</Button>
             )}
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                pause();
-                setClue(clue.id, "encontrada", `Entregue manualmente pelo mestre — ${clue.name}`);
-              }}
-            >
-              ENTREGAR PISTA
-            </Button>
+            <Button size="sm" variant="secondary" onClick={() => { pause(); setClue(clue.id, "encontrada", `Entregue manualmente pelo mestre — ${clue.name}`); }}>ENTREGAR PISTA</Button>
             <select
               className="rounded-sm border border-input bg-background px-2 py-1 text-xs"
               value={st}
               onChange={(e) => setClue(clue.id, e.target.value as ClueStatus, clue.name)}
             >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {clueStatusLabel[s]}
-                </option>
-              ))}
+              {STATUSES.map((s) => <option key={s} value={s}>{clueStatusLabel[s]}</option>)}
             </select>
-            <Button size="sm" variant="ghost" onClick={() => setEditDc((v) => !v)}>
-              editar DT
-            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditDc((v) => !v)}>editar DT</Button>
           </div>
 
           {editDc && (
             <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border p-2">
               {DC_PRESETS.map((p) => (
-                <Button key={p.value} size="sm" variant="outline" onClick={() => setDc(clue.id, p.value)}>
-                  {p.label} ({p.value})
-                </Button>
+                <Button key={p.value} size="sm" variant="outline" onClick={() => setDc(clue.id, p.value)}>{p.label} ({p.value})</Button>
               ))}
-              <Input
-                type="number"
-                className="h-8 w-24"
-                defaultValue={dc}
-                onBlur={(e) => setDc(clue.id, Number(e.target.value) || dc)}
-              />
+              <Input type="number" className="h-8 w-24" defaultValue={dc} onBlur={(e) => setDc(clue.id, Number(e.target.value) || dc)} />
             </div>
           )}
         </div>
@@ -250,24 +203,10 @@ function FindingCard({ clue, onTest }: { clue: Clue; onTest: (id: string) => voi
 }
 
 function L({ k, v, tone }: { k: string; v: string; tone?: string }) {
-  return (
-    <p className="text-sm">
-      <span className={`stamp ${tone ?? "text-muted-foreground"}`}>{k}: </span>
-      {v}
-    </p>
-  );
+  return <p className="text-sm"><span className={`stamp ${tone ?? "text-muted-foreground"}`}>{k}: </span>{v}</p>;
 }
 
 function Bloco({ titulo, itens }: { titulo: string; itens: string[] }) {
   if (!itens.length) return null;
-  return (
-    <div>
-      <p className="stamp text-muted-foreground">{titulo}</p>
-      <ul className="mt-1 space-y-0.5 text-sm">
-        {itens.map((i) => (
-          <li key={i}>• {i}</li>
-        ))}
-      </ul>
-    </div>
-  );
+  return <div><p className="stamp text-muted-foreground">{titulo}</p><ul className="mt-1 space-y-0.5 text-sm">{itens.map((i) => <li key={i}>• {i}</li>)}</ul></div>;
 }
