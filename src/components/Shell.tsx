@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { LOCATIONS, SCENES } from "@/data/campaign";
 import { FlaskConical, Lock, Save } from "lucide-react";
+import { useClockEngine, useSessionPace, useTimelineStatus, paceLabel, paceTone } from "@/lib/clock";
+import { ClockControls, EventAlert } from "@/components/ClockBar";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const NAV = [
   { to: "/", label: "Painel" },
