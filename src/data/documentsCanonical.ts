@@ -43,9 +43,10 @@ export const DOCUMENT_TITLES: Record<string, string> = {
   "40_Inventario_Achados_Perdidos.docx": "INVENTÁRIO DE ACHADOS E PERDIDOS",
 };
 
-const makeDoc = (c: Partial<Clue> & Pick<Clue, "id" | "sourceDocument" | "mainLocationId" | "playerDescription" | "masterMeaning">): Clue => ({
+const makeDoc = (
+  c: Partial<Clue> & Pick<Clue, "id" | "sourceDocument" | "mainLocationId" | "playerDescription" | "masterMeaning">,
+): Clue => ({
   id: c.id,
-  name: DOCUMENT_TITLES[c.sourceDocument] ?? c.sourceDocument,
   category: "Documento",
   playerDescription: c.playerDescription,
   masterMeaning: c.masterMeaning,
@@ -54,7 +55,7 @@ const makeDoc = (c: Partial<Clue> & Pick<Clue, "id" | "sourceDocument" | "mainLo
   dayAvailable: 1,
   recommendedDay: null,
   microLocation: "Arquivo físico do setor",
-  exactLocation: "Definir conforme a posição física usada na mesa",
+  exactLocation: "Arquivo físico do setor responsável",
   suggestedSkill: "Investigação",
   dc: 15,
   discoveryTrigger: "Procurar documentos, cruzar nomes ou pedir o registro ao setor responsável.",
