@@ -84,20 +84,18 @@ function LocaisPage() {
       </div>
 
       <Dialog open={!!aberto} onOpenChange={(o) => !o && setAberto(null)}>
-        <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto">
           {local && (
             <>
               <DialogHeader>
                 <DialogTitle className="font-display text-3xl">{local.name}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 text-sm">
-                <p>{local.description}</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   <Field label="Disponibilidade" value={local.availability} />
                   <Field label="Dias de acesso" value={`Dia ${local.dayAvailable.join(" e ")}`} />
                   <Field label="Horário recomendado" value={local.recommendedTime} />
                   <Field label="Pré-requisitos" value={local.prerequisites} />
-                  <Field label="Pessoas presentes" value={local.people.join(", ")} />
                   <Field
                     label="Locais conectados"
                     value={local.connectedLocations
@@ -106,56 +104,9 @@ function LocaisPage() {
                   />
                 </div>
 
-                <div className="rounded-sm border border-primary/50 p-4">
-                  <p className="stamp text-primary">Nesta sala eles podem encontrar</p>
-                  <ul className="mt-2 space-y-2">
-                    {local.clueIds.map((cid) => {
-                      const c = CLUES.find((x) => x.id === cid);
-                      if (!c) return null;
-                      const st = session.clueStatus[cid] ?? "escondida";
-                      return (
-                        <li key={cid}>
-                          <button
-                            className="flex w-full items-center gap-2 rounded-sm border border-border p-2 text-left hover:border-primary"
-                            onClick={() => setClueId(cid)}
-                          >
-                            <span className={`size-2 rounded-full ${routeDot[c.route]}`} />
-                            <span className="font-semibold">{c.name}</span>
-                            <span className="ml-auto text-xs text-muted-foreground">{clueStatusLabel[st]}</span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-
-                <Listing title="Ações possíveis" items={local.actions} />
-                <div>
-                  <p className="stamp text-muted-foreground">Testes</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {local.testIds.map((t) => (
-                      <Button key={t} size="sm" variant="outline" onClick={() => setTestId(t)}>
-                        {TESTS.find((x) => x.id === t)?.name ?? t}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <Listing title="Perigos" items={local.risks} />
-                <Listing title="Consequências" items={local.consequences} />
+                <RoomInspector locationId={local.id} />
 
                 <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-                  <span className="stamp text-muted-foreground">Estado da sala:</span>
-                  <select
-                    className="rounded-sm border border-input bg-background px-2 py-1 text-xs"
-                    value={session.locationStatus[local.id] ?? "nao-visitada"}
-                    onChange={(e) => store.setLocationStatus(local.id, e.target.value as LocationStatus)}
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {locationStatusLabel[s]}
-                      </option>
-                    ))}
-                  </select>
                   <Button
                     size="sm"
                     className="ml-auto"
@@ -172,6 +123,7 @@ function LocaisPage() {
           )}
         </DialogContent>
       </Dialog>
+
 
       <Dialog open={!!clueId} onOpenChange={(o) => !o && setClueId(null)}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
