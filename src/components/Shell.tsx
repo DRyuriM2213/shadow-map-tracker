@@ -126,6 +126,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const toggleSimulation = useCampaign((s) => s.toggleSimulation);
   const logout = useCampaign((s) => s.logout);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useClockEngine();
+  const { proximo, countdown } = useTimelineStatus();
+  const { pace } = useSessionPace();
 
   if (!authed) return <LoginScreen />;
 
