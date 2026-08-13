@@ -139,6 +139,7 @@ function PistasPage() {
           <Filtro label="Importância" value={fImp} onChange={setFImp} options={[["todos", "Todas"], ["ambiental", "Ambiental"], ["secundaria", "Secundária"], ["importante", "Importante"], ["obrigatoria", "Obrigatória"]]} />
           <Filtro label="Rota" value={fRota} onChange={setFRota} options={[["todos", "Todas"], ["amarelo", "Amarelo"], ["azul", "Azul"], ["verde", "Verde"], ["roxo", "Roxo"], ["vermelho", "Vermelho"], ["cinza", "Cinza"], ["verde-claro", "Verde-claro"], ["preto", "Preto"]]} />
           <Filtro label="Personagem (notas)" value={fPersonagem} onChange={setFPersonagem} options={[["todos", "Todos"], ...PLAYERS.map((p) => [p.id, p.characterName] as [string, string])]} />
+          <Filtro label="Tipo" value={fTipo} onChange={setFTipo} options={[["todos", "Todas"], ["pendente", "Ainda não entregues"], ["secreta", "Secretas"], ["futura", "Futuras"]]} />
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
