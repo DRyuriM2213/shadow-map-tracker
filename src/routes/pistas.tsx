@@ -92,13 +92,22 @@ function PistasPage() {
   return (
     <Shell>
       <div className="mx-auto max-w-7xl space-y-5">
-        <header>
-          <h1 className="text-3xl font-semibold">Quadro de Pistas</h1>
-          <p className="text-sm text-muted-foreground">
-            {CLUES.length} pistas cadastradas nos Dias 1 e 2. Pistas obrigatórias nunca desaparecem: se forem perdidas, o
-            sistema sugere contingências.
-          </p>
+        <header className="flex flex-wrap items-end gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold">Catálogo global de pistas</h1>
+            <p className="text-sm text-muted-foreground">
+              {CLUES.length} pistas visíveis a qualquer momento — o dia é apenas uma recomendação. Pistas obrigatórias
+              nunca desaparecem: se forem perdidas, o sistema sugere contingências.
+            </p>
+          </div>
+          <Input
+            className="ml-auto max-w-sm"
+            placeholder="Buscar por nome, local exato, perícia, documento…"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
         </header>
+
 
         {obrigatoriasPerdidas.length > 0 && (
           <div className="rounded-sm border border-destructive bg-destructive/10 p-4">
