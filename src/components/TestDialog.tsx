@@ -4,16 +4,26 @@ import { Button } from "@/components/ui/button";
 import { TESTS } from "@/data/campaign";
 import { useCampaign } from "@/store/campaign";
 
-const RESULTS = ["SUCESSO", "SUCESSO PARCIAL", "FALHA", "FALHA CRÍTICA", "RESOLVER SEM TESTE"] as const;
+export type TestResult = "SUCESSO" | "SUCESSO PARCIAL" | "FALHA" | "FALHA CRÍTICA" | "RESOLVER SEM TESTE";
 
-export function TestDialog({ testId, onClose }: { testId: string | null; onClose: () => void }) {
+const RESULTS: TestResult[] = ["SUCESSO", "SUCESSO PARCIAL", "FALHA", "FALHA CRÍTICA", "RESOLVER SEM TESTE"];
+
+export function TestDialog({
+  testId,
+  onClose,
+  onResult,
+}: {
+  testId: string | null;
+  onClose: () => void;
+  onResult?: (result: TestResult, narration: string, testName: string) => void;
+}) {
   const applyTest = useCampaign((s) => s.applyTest);
   const test = TESTS.find((t) => t.id === testId);
-  const [feito, setFeito] = useState<string | null>(null);
+  const [feito, setFeito] = useState<TestResult | null>(null);
 
   if (!test) return null;
 
-  const detailFor = (r: string) =>
+  const detailFor = (r: TestResult) =>
     r === "SUCESSO"
       ? test.success
       : r === "SUCESSO PARCIAL"
@@ -23,6 +33,15 @@ export function TestDialog({ testId, onClose }: { testId: string | null; onClose
           : r === "FALHA CRÍTICA"
             ? test.criticalFailure
             : "Resolvido pela narrativa, sem rolagem.";
+
+  const narrationFor = (r: TestResult) => {
+    const detail = detailFor(r);
+    if (r === "SUCESSO") return `Depois de observar com atenção, o detalhe finalmente fica claro. ${detail}`;
+    if (r === "SUCESSO PARCIAL") return `Vocês conseguem avançar, mas a resposta ainda vem incompleta. ${detail}`;
+    if (r === "FALHA") return `A tentativa não entrega uma resposta segura agora. ${detail}`;
+    if (r === "FALHA CRÍTICA") return `A tentativa dá errado de um jeito perceptível e deixa consequência. ${detail}`;
+    return "A situação é resolvida pela narrativa, sem necessidade de rolagem.";
+  };
 
   return (
     <Dialog
@@ -62,6 +81,7 @@ export function TestDialog({ testId, onClose }: { testId: string | null; onClose
                 onClick={() => {
                   applyTest(test.id, r, detailFor(r), test.clueId);
                   setFeito(r);
+                  onResult?.(r, narrationFor(r), test.name);
                 }}
               >
                 {r}
@@ -70,8 +90,8 @@ export function TestDialog({ testId, onClose }: { testId: string | null; onClose
           </div>
           {feito && (
             <div className="rounded-sm border border-primary/60 bg-primary/10 p-3">
-              <p className="stamp text-primary">Resultado registrado: {feito}</p>
-              <p className="mt-1">{detailFor(feito)}</p>
+              <p className="stamp text-primary">Narrar resultado — {feito}</p>
+              <p className="mt-1 font-display text-base leading-relaxed">{narrationFor(feito)}</p>
             </div>
           )}
         </div>
@@ -81,19 +101,9 @@ export function TestDialog({ testId, onClose }: { testId: string | null; onClose
 }
 
 function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="stamp text-muted-foreground">{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
+  return <div><dt className="stamp text-muted-foreground">{label}</dt><dd>{value}</dd></div>;
 }
 
 function Row({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <p className="text-sm">
-      <span className={`stamp ${tone}`}>{label}: </span>
-      {value}
-    </p>
-  );
+  return <p className="text-sm"><span className={`stamp ${tone}`}>{label}: </span>{value}</p>;
 }
