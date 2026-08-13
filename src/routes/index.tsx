@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { CLUES, CONSEQUENCES, LOCATIONS, SCENES } from "@/data/campaign";
 import { useCampaign } from "@/store/campaign";
 import { routeText } from "@/lib/ui";
+import { paceLabel, paceTone, useSessionPace, useTimelineStatus } from "@/lib/clock";
+import { ClockControls } from "@/components/ClockBar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
