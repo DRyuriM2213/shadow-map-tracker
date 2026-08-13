@@ -150,6 +150,8 @@ function Dashboard() {
           </div>
         </section>
 
+        <BlocosOperacionais />
+
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Link to="/sessao" className="sm:col-span-2 lg:col-span-1">
             <Button className="h-20 w-full text-base">CONTINUAR SESSÃO</Button>
