@@ -19,15 +19,15 @@ export const Route = createFileRoute("/")({
 
 const SHORTCUTS = [
   { to: "/sessao-v2", label: "Continuar sessão", primary: true },
-  { to: "/mapa", label: "Mapa" },
-  { to: "/pistas-v2", label: "Pistas e documentos" },
-  { to: "/npcs", label: "NPCs e falas" },
-  { to: "/timeline", label: "Timeline" },
-  { to: "/locais", label: "Locais e salas" },
-  { to: "/diagrama", label: "Diagrama" },
-  { to: "/personagens", label: "Personagens" },
-  { to: "/consequencias", label: "Consequências" },
-  { to: "/resumo", label: "Resumo" },
+  { to: "/mapa", label: "Mapa", primary: false },
+  { to: "/pistas-v2", label: "Pistas e documentos", primary: false },
+  { to: "/npcs", label: "NPCs e falas", primary: false },
+  { to: "/timeline", label: "Timeline", primary: false },
+  { to: "/locais", label: "Locais e salas", primary: false },
+  { to: "/diagrama", label: "Diagrama", primary: false },
+  { to: "/personagens", label: "Personagens", primary: false },
+  { to: "/consequencias", label: "Consequências", primary: false },
+  { to: "/resumo", label: "Resumo", primary: false },
 ] as const;
 
 function Dashboard() {
@@ -145,7 +145,7 @@ function Dashboard() {
   );
 }
 
-function Info({ label, value, tone }: { label: string; value: string; tone?: string }) {
+function Info({ label, value, tone }: { label: string; value: string; tone?: string | undefined }) {
   return <div className="rounded-sm border border-border bg-secondary/40 p-3"><p className="stamp text-muted-foreground">{label}</p><p className={`mt-1 text-sm font-medium ${tone ?? ""}`}>{value}</p></div>;
 }
 
