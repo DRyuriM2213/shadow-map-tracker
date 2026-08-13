@@ -26,6 +26,7 @@ export const Route = createFileRoute("/")({
 
 const BOTOES = [
   { to: "/sessao", label: "Continuar sessão" },
+  { to: "/mapa", label: "Mapa interativo" },
   { to: "/diagrama", label: "Abrir diagrama" },
   { to: "/timeline", label: "Abrir timeline" },
   { to: "/locais", label: "Locais e salas" },
@@ -35,6 +36,70 @@ const BOTOES = [
   { to: "/resumo", label: "Resumo da sessão" },
   { to: "/editar", label: "Editar campanha" },
 ] as const;
+
+function BlocosOperacionais() {
+  const session = useCampaign((s) => s.session);
+  const { proximo, countdown } = useTimelineStatus();
+  const { pace, narrativo, real } = useSessionPace();
+  const local = LOCATIONS.find((l) => l.id === session.currentLocationId);
+  const scene = SCENES.find((s) => s.id === session.currentSceneId);
+  const pendentes = CLUES.filter(
+    (c) =>
+      c.importance === "obrigatoria" &&
+      !["encontrada", "interpretada", "contingencia"].includes(session.clueStatus[c.id] ?? ""),
+  );
+
+  return (
+    <section className="grid gap-3 lg:grid-cols-3">
+      <div className="dossier rounded-sm p-4">
+        <p className="stamp text-primary">Agora</p>
+        <p className="mt-1 font-mono text-3xl">{session.time}</p>
+        <p className="text-sm">{local?.name ?? "Local não definido"}</p>
+        <p className="text-xs text-muted-foreground">{scene?.title ?? "Sem cena ativa"}</p>
+        <div className="mt-3">
+          <ClockControls />
+        </div>
+      </div>
+
+      <div className="dossier rounded-sm p-4">
+        <p className="stamp text-primary">Próximo evento</p>
+        {proximo ? (
+          <>
+            <p className="mt-1 font-mono text-3xl">{proximo.time}</p>
+            <p className="text-sm font-semibold">{proximo.title}</p>
+            <p className="text-xs text-muted-foreground">
+              em {countdown} min de jogo · {proximo.mandatory ? "obrigatório" : "opcional"}
+            </p>
+            <p className="mt-2 text-xs">{proximo.description}</p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">Nenhum evento pendente para hoje.</p>
+        )}
+        <p className={`stamp mt-3 ${paceTone[pace]}`}>
+          Ritmo: {paceLabel[pace]} — narrativa {Math.round(narrativo * 100)}% / sessão real {Math.round(real * 100)}%
+        </p>
+      </div>
+
+      <div className="dossier rounded-sm p-4">
+        <p className="stamp text-primary">Pistas obrigatórias pendentes</p>
+        <p className="mt-1 text-3xl font-semibold">{pendentes.length}</p>
+        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          {pendentes.slice(0, 6).map((c) => (
+            <li key={c.id}>
+              • {c.name} <span className="text-foreground">(DT {session.dcOverrides[c.id] ?? c.dc})</span>
+            </li>
+          ))}
+        </ul>
+        <Link to="/pistas">
+          <Button size="sm" variant="outline" className="mt-3 w-full">
+            Abrir catálogo de pistas
+          </Button>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 
 function Dashboard() {
   const session = useCampaign((s) => s.session);
