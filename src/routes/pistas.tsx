@@ -157,13 +157,20 @@ function PistasPage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{c.playerDescription}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                  <span className="rounded-sm bg-primary px-2 py-0.5 font-mono font-bold text-primary-foreground">
+                    DT {session.dcOverrides[c.id] ?? c.dc}
+                  </span>
+                  <span className="rounded-sm bg-secondary px-2 py-0.5">{c.suggestedSkill}</span>
                   <span className="rounded-sm bg-secondary px-2 py-0.5">{clueStatusLabel[st]}</span>
                   <span className="rounded-sm bg-secondary px-2 py-0.5">{importanceLabel[c.importance]}</span>
-                  <span className="rounded-sm bg-secondary px-2 py-0.5">Dia {c.dayAvailable}</span>
+                  <span className="rounded-sm bg-secondary px-2 py-0.5">Dia rec. {c.recommendedDay}</span>
                   <span className="rounded-sm bg-secondary px-2 py-0.5">
                     {LOCATIONS.find((l) => l.id === c.mainLocationId)?.name}
                   </span>
+                  {c.isSecret && <span className="rounded-sm bg-secondary px-2 py-0.5 text-route-roxo">secreta</span>}
+                  {c.isFuture && <span className="rounded-sm bg-secondary px-2 py-0.5 text-route-azul">futura</span>}
                 </div>
+
               </button>
             );
           })}
