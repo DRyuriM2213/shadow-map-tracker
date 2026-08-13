@@ -53,7 +53,6 @@ export function RoomInspector({
   compact?: boolean;
 }) {
   const session = useCampaign((s) => s.session);
-  const setClue = useCampaign((s) => s.setClue);
   const setLocationStatus = useCampaign((s) => s.setLocationStatus);
   const [testId, setTestId] = useState<string | null>(null);
 
