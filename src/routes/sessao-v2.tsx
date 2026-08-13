@@ -5,11 +5,12 @@ import { TestDialog, type TestResult } from "@/components/TestDialog";
 import { Button } from "@/components/ui/button";
 import { CLUES, LOCATIONS, SCENES, TESTS } from "@/data/campaignFull";
 import { getActionNarration, introNarration, type LiveNarration } from "@/data/sessionEnhancements";
+import { masterGuidance } from "@/data/masterGuidance";
 import { npcsForLocation } from "@/data/npcs";
 import { useCampaign } from "@/store/campaign";
 import { clueStatusLabel, importanceLabel, routeBorder, routeDot, routeText } from "@/lib/ui";
 import type { Clue } from "@/lib/types";
-import { ArrowLeft, Copy, MapPin, MessageSquareText, Pin, PinOff, RotateCcw } from "lucide-react";
+import { ArrowLeft, Copy, MapPin, Pin, PinOff, RotateCcw } from "lucide-react";
 
 export const Route = createFileRoute("/sessao-v2")({ component: SessaoV2 });
 
@@ -38,19 +39,23 @@ function SessaoV2() {
   const localNpcs = useMemo(() => npcsForLocation(session.currentLocationId), [session.currentLocationId]);
 
   const showNarration = (next: LiveNarration) => {
-    if (pinned && narration.kind !== "INTRODUÇÃO") return;
+    if (pinned) return;
     setHistory((h) => [...h.slice(-7), narration]);
     setNarration(next);
   };
 
   const doAction = (action: string) => {
-    const next = getActionNarration(scene, action);
-    showNarration(next);
+    showNarration(getActionNarration(scene, action));
     store.logAction("acao", `Ação: ${action}`, scene.title, scene.route);
   };
 
   const onTestResult = (result: TestResult, text: string, name: string) => {
     showNarration({ kind: "RESULTADO", label: `${name} — ${result}`, text });
+  };
+
+  const restoreIntro = () => {
+    setHistory((h) => [...h.slice(-7), narration]);
+    setNarration(introNarration(scene));
   };
 
   return (
@@ -74,9 +79,14 @@ function SessaoV2() {
               <span className={`stamp ${routeText[scene.route]}`}>{scene.sceneType}</span>
               <span className="stamp text-muted-foreground">DIA {scene.day} · {session.time}</span>
               <span className="stamp text-muted-foreground"><MapPin className="mr-1 inline size-3" />{location?.name ?? "—"}</span>
+              {pinned && <span className="stamp rounded-sm border border-primary/60 px-2 py-0.5 text-primary">narração fixada</span>}
             </div>
             <h1 className="mt-2 text-3xl font-semibold">{scene.title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{scene.masterDescription}</p>
+
+            <div className="mt-3 rounded-sm border border-border/70 bg-secondary/30 p-3">
+              <p className="stamp text-muted-foreground">Orientação para o mestre</p>
+              <p className="mt-1 text-sm leading-relaxed">{masterGuidance(scene)}</p>
+            </div>
 
             <div className="paper-sheet mt-4 rounded-sm p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -86,16 +96,30 @@ function SessaoV2() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {history.length > 0 && (
-                    <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={() => {
-                      const previous = history.at(-1);
-                      if (!previous) return;
-                      setHistory((h) => h.slice(0, -1));
-                      setNarration(previous);
-                    }}><ArrowLeft className="mr-1 size-3.5" /> Voltar</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-paper-foreground/40 text-paper-foreground"
+                      onClick={() => {
+                        const previous = history.at(-1);
+                        if (!previous) return;
+                        setHistory((h) => h.slice(0, -1));
+                        setNarration(previous);
+                      }}
+                    >
+                      <ArrowLeft className="mr-1 size-3.5" /> Voltar
+                    </Button>
                   )}
-                  <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={() => { setHistory((h) => [...h, narration]); setNarration(introNarration(scene)); }}><RotateCcw className="mr-1 size-3.5" /> Introdução</Button>
-                  <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={() => setPinned((v) => !v)}>{pinned ? <PinOff className="mr-1 size-3.5" /> : <Pin className="mr-1 size-3.5" />}{pinned ? "Desfixar" : "Fixar"}</Button>
-                  <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={() => navigator.clipboard.writeText(narration.text)}><Copy className="mr-1 size-3.5" /> Copiar</Button>
+                  <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={restoreIntro}>
+                    <RotateCcw className="mr-1 size-3.5" /> Introdução
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={() => setPinned((v) => !v)}>
+                    {pinned ? <PinOff className="mr-1 size-3.5" /> : <Pin className="mr-1 size-3.5" />}
+                    {pinned ? "Desfixar" : "Fixar"}
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-paper-foreground/40 text-paper-foreground" onClick={() => navigator.clipboard.writeText(narration.text)}>
+                    <Copy className="mr-1 size-3.5" /> Copiar
+                  </Button>
                 </div>
               </div>
               <p className="mt-4 font-display text-xl leading-relaxed">{narration.text}</p>
@@ -111,22 +135,39 @@ function SessaoV2() {
                 <p className="stamp text-muted-foreground">Ações possíveis — clique para trocar a narração</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {scene.actions.map((action) => (
-                    <Button key={action} size="sm" variant={narration.kind === "AÇÃO" && narration.label === action ? "default" : "outline"} onClick={() => doAction(action)}>{action}</Button>
+                    <Button
+                      key={action}
+                      size="sm"
+                      variant={narration.kind === "AÇÃO" && narration.label === action ? "default" : "outline"}
+                      onClick={() => doAction(action)}
+                    >
+                      {action}
+                    </Button>
                   ))}
                 </div>
+                {pinned && <p className="mt-2 text-xs text-primary">A ação será registrada no histórico, mas a narração ficará fixa até você desfixar.</p>}
               </div>
             )}
 
             {scene.testIds.length > 0 && (
               <div className="mt-4">
                 <p className="stamp text-muted-foreground">Testes possíveis</p>
-                <div className="mt-2 flex flex-wrap gap-2">{scene.testIds.map((id) => <Button key={id} size="sm" variant="secondary" onClick={() => setTestId(id)}>{TESTS.find((t) => t.id === id)?.name ?? id}</Button>)}</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {scene.testIds.map((id) => (
+                    <Button key={id} size="sm" variant="secondary" onClick={() => setTestId(id)}>
+                      {TESTS.find((t) => t.id === id)?.name ?? id}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
           </section>
 
           <section className="dossier rounded-sm p-5">
-            <p className="stamp text-muted-foreground">Pistas neste contexto</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="stamp text-muted-foreground">Pistas neste contexto</p>
+              <Link to="/pistas-v2" className="text-xs underline">catálogo completo</Link>
+            </div>
             <div className="mt-3 grid gap-2 md:grid-cols-2">
               {localClues.map((c) => {
                 const status = session.clueStatus[c.id] ?? "escondida";
@@ -144,16 +185,32 @@ function SessaoV2() {
           {scene.choices.length > 0 && (
             <section className="dossier rounded-sm p-5">
               <p className="stamp text-muted-foreground">Próximos caminhos / decisões</p>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">{scene.choices.map((choice) => <button key={choice.id} className={`rounded-sm border-l-4 border border-border p-3 text-left ${routeBorder[choice.routeColor]}`} onClick={() => store.choose(scene.id, choice.id)}><b>{choice.title}</b><p className="mt-1 text-xs text-muted-foreground">{choice.description}</p></button>)}</div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {scene.choices.map((choice) => (
+                  <button key={choice.id} className={`rounded-sm border-l-4 border border-border p-3 text-left ${routeBorder[choice.routeColor]}`} onClick={() => store.choose(scene.id, choice.id)}>
+                    <b>{choice.title}</b>
+                    <p className="mt-1 text-xs text-muted-foreground">{choice.description}</p>
+                  </button>
+                ))}
+              </div>
             </section>
           )}
         </main>
 
         <aside className="space-y-4">
           <section className="dossier rounded-sm p-4">
-            <div className="flex items-center justify-between gap-2"><p className="stamp text-primary">NPCs no local</p><Link to="/npcs" className="text-xs underline">ver todos</Link></div>
+            <div className="flex items-center justify-between gap-2">
+              <p className="stamp text-primary">NPCs no local</p>
+              <Link to="/npcs" className="text-xs underline">ver todos</Link>
+            </div>
             <div className="mt-3 space-y-2">
-              {localNpcs.map((npc) => <Link key={npc.id} to="/npcs" className="block rounded-sm border border-border p-3 hover:border-primary"><b>{npc.name}</b><p className="text-xs text-muted-foreground">{npc.role}</p><p className="mt-1 text-xs">{npc.initialAttitude}</p></Link>)}
+              {localNpcs.map((npc) => (
+                <Link key={npc.id} to="/npcs" className="block rounded-sm border border-border p-3 hover:border-primary">
+                  <b>{npc.name}</b>
+                  <p className="text-xs text-muted-foreground">{npc.role}</p>
+                  <p className="mt-1 text-xs">{npc.initialAttitude}</p>
+                </Link>
+              ))}
               {localNpcs.length === 0 && <p className="text-xs text-muted-foreground">Nenhum NPC principal cadastrado como provável neste local.</p>}
             </div>
           </section>
@@ -164,7 +221,7 @@ function SessaoV2() {
               <Button size="sm" variant="secondary" onClick={() => store.advanceTime(15)}>+15 min</Button>
               <Button size="sm" variant="secondary" onClick={() => store.advanceTime(60)}>+1 hora</Button>
               <Link to="/mapa" className="rounded-sm border border-border px-3 py-2 text-center text-xs hover:border-primary">Mapa</Link>
-              <Link to="/pistas" className="rounded-sm border border-border px-3 py-2 text-center text-xs hover:border-primary">Todas as pistas</Link>
+              <Link to="/pistas-v2" className="rounded-sm border border-border px-3 py-2 text-center text-xs hover:border-primary">Todas as pistas</Link>
             </div>
           </section>
         </aside>
@@ -182,7 +239,11 @@ function SessaoV2() {
             <p className="mt-3 text-sm"><b>Onde:</b> {clue.microLocation || clue.exactLocation || LOCATIONS.find((l) => l.id === clue.mainLocationId)?.name}</p>
             <p className="mt-2 text-sm"><b>Teste sugerido:</b> {clue.suggestedSkill} • DT {session.dcOverrides[clue.id] ?? clue.dc}</p>
             <p className="mt-2 text-sm"><b>Para o mestre:</b> {clue.masterMeaning}</p>
-            <div className="mt-4 flex flex-wrap gap-2"><Button size="sm" onClick={() => { store.setClue(clue.id, "encontrada", clue.name); setClue(null); }}>Entregar pista</Button>{clue.testId && <Button size="sm" variant="outline" onClick={() => setTestId(clue.testId!)}>Abrir teste</Button>}<Button size="sm" variant="ghost" onClick={() => setClue(null)}>Fechar</Button></div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => { store.setClue(clue.id, "encontrada", clue.name); setClue(null); }}>Entregar pista</Button>
+              {clue.testId && <Button size="sm" variant="outline" onClick={() => setTestId(clue.testId!)}>Abrir teste</Button>}
+              <Button size="sm" variant="ghost" onClick={() => setClue(null)}>Fechar</Button>
+            </div>
           </div>
         </div>
       )}
