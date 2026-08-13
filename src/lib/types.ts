@@ -73,7 +73,7 @@ export interface Clue {
   alternativeLocationIds: string[];
   /** Metadado de recomendação apenas — nunca bloqueia consulta. */
   dayAvailable: 1 | 2;
-  recommendedDay: 1 | 2;
+  recommendedDay: 1 | 2 | null;
   microLocation: string;
   exactLocation: string;
   suggestedSkill: string;
@@ -97,7 +97,6 @@ export interface Clue {
   fallbackOptions: string[];
   route: RouteColor;
 }
-
 
 export interface CampaignLocation {
   id: string;
