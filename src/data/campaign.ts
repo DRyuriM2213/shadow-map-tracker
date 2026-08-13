@@ -79,6 +79,18 @@ const clue = (c: Partial<Clue> & Pick<Clue, "id" | "name" | "playerDescription" 
   actionRequired: "Observar / investigar o local",
   successResult: "A pista é entregue com clareza.",
   failureResult: "A pista permanece disponível, mas exige nova tentativa ou outro ângulo.",
+  partialSuccess: "O grupo percebe algo incompleto: entregue metade da informação.",
+  criticalFailure: "A tentativa chama atenção. Aumente a atenção da universidade em 1.",
+  recommendedDay: c.dayAvailable,
+  microLocation: "",
+  exactLocation: "",
+  suggestedSkill: "Percepção",
+  dc: 15,
+  discoveryTrigger: "",
+  sourceDocument: "",
+  isSecret: false,
+  isFuture: false,
+  medium: "ambiental",
   consequenceIds: [],
   relatedClueIds: [],
   unlocks: "",
@@ -87,6 +99,7 @@ const clue = (c: Partial<Clue> & Pick<Clue, "id" | "name" | "playerDescription" 
   route: "amarelo",
   ...c,
 }) as Clue;
+
 
 export const CLUES: Clue[] = [
   // PÁTIO

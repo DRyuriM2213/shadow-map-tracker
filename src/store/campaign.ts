@@ -33,8 +33,19 @@ export interface SessionState {
   scheduled: ScheduledConsequence[];
   log: LogEntry[];
   notes: MasterNote[];
+  /* --- V2: relógio da campanha --- */
+  clockRunning: boolean;
+  /** minutos de jogo por minuto real */
+  clockSpeed: number;
+  autoPauseOnTest: boolean;
+  /** DTs sobrescritas pelo mestre: clueId -> DT */
+  dcOverrides: Record<string, number>;
+  /** meta de sessão real (horário de relógio de parede) */
+  realStart: string;
+  realEnd: string;
   updatedAt: string;
 }
+
 
 interface Store {
   authed: boolean;
@@ -69,6 +80,17 @@ interface Store {
   createCheckpoint: (label: string) => void;
   restoreCheckpoint: (id: string) => void;
   toggleSimulation: () => void;
+  /* --- V2 --- */
+  setClockRunning: (running: boolean) => void;
+  toggleClock: () => void;
+  setClockSpeed: (speed: number) => void;
+  setAutoPauseOnTest: (v: boolean) => void;
+  tickClock: (minutes: number) => void;
+  setDc: (clueId: string, dc: number) => void;
+  setRealGoal: (start: string, end: string) => void;
+  jumpToNextEvent: () => void;
+  transitionToDay2: () => void;
+
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -110,6 +132,13 @@ const freshSession = (name?: string): SessionState => ({
     },
   ],
   notes: [],
+  clockRunning: false,
+  clockSpeed: 10,
+  autoPauseOnTest: true,
+  dcOverrides: {},
+  realStart: "13:30",
+  realEnd: "17:00",
+
   updatedAt: new Date().toISOString(),
 });
 
@@ -392,10 +421,74 @@ export const useCampaign = create<Store>()(
             });
           }
         },
+
+        /* ------------------------- V2: relógio ------------------------- */
+        setClockRunning: (running) =>
+          set({ session: { ...get().session, clockRunning: running } }),
+        toggleClock: () =>
+          set({ session: { ...get().session, clockRunning: !get().session.clockRunning } }),
+        setClockSpeed: (speed) => set({ session: { ...get().session, clockSpeed: speed } }),
+        setAutoPauseOnTest: (v) => set({ session: { ...get().session, autoPauseOnTest: v } }),
+
+        /** avanço silencioso do motor de tempo (não gera log nem undo) */
+        tickClock: (minutes) => {
+          const s = get().session;
+          set({
+            session: { ...s, time: fromMinutes(toMinutes(s.time) + minutes) },
+          });
+        },
+
+        setDc: (clueId, dc) =>
+          mutate((s) => {
+            s.dcOverrides[clueId] = dc;
+            pushLog(s, "dt", `DT ajustada: ${clueId} → ${dc}`);
+          }),
+
+        setRealGoal: (start, end) =>
+          set({ session: { ...get().session, realStart: start, realEnd: end } }),
+
+        jumpToNextEvent: () =>
+          mutate((s) => {
+            const now = toMinutes(s.time);
+            const next = TIMELINE.filter(
+              (e) => e.day === s.day && toMinutes(e.time) > now && !s.activatedEvents.includes(e.id),
+            ).sort((a, b) => toMinutes(a.time) - toMinutes(b.time))[0];
+            if (!next) return;
+            s.time = next.time;
+            s.clockRunning = false;
+            pushLog(s, "tempo", `Avançado até o próximo evento: ${next.title}`, next.time);
+          }),
+
+        transitionToDay2: () =>
+          mutate((s) => {
+            s.day = 2;
+            s.time = "08:00";
+            s.clockRunning = false;
+            const madrugada = TIMELINE.find((e) => e.id === "tl-2-0333");
+            if (madrugada && !s.activatedEvents.includes(madrugada.id)) {
+              s.activatedEvents.push(madrugada.id);
+              pushLog(s, "evento", `Evento da madrugada: ${madrugada.title}`, madrugada.description);
+            }
+            pushLog(s, "tempo", "Transição do Dia 1 para o Dia 2 — 08:00");
+          }),
       };
     },
     {
       name: "berco-vazio-painel-mestre",
+      version: 2,
+      migrate: (persisted: unknown) => {
+        const st = persisted as { session?: Partial<SessionState> } | undefined;
+        if (st?.session) {
+          const s = st.session;
+          s.clockRunning = false;
+          s.clockSpeed = s.clockSpeed ?? 10;
+          s.autoPauseOnTest = s.autoPauseOnTest ?? true;
+          s.dcOverrides = s.dcOverrides ?? {};
+          s.realStart = s.realStart ?? "13:30";
+          s.realEnd = s.realEnd ?? "17:00";
+        }
+        return persisted as Store;
+      },
       partialize: (s) => ({
         authed: s.authed,
         pin: s.pin,
@@ -405,5 +498,6 @@ export const useCampaign = create<Store>()(
         realBackup: s.realBackup,
       }),
     },
+
   ),
 );

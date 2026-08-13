@@ -11,6 +11,7 @@ import { FlaskConical, Lock, Save } from "lucide-react";
 const NAV = [
   { to: "/", label: "Painel" },
   { to: "/sessao", label: "Sessão ao vivo" },
+  { to: "/mapa", label: "Mapa" },
   { to: "/diagrama", label: "Diagrama" },
   { to: "/timeline", label: "Timeline" },
   { to: "/locais", label: "Locais e salas" },
