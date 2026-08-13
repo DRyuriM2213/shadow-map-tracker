@@ -1,22 +1,9 @@
 /**
  * CONFIGURAÇÃO DO MAPA INTERATIVO
  * -------------------------------------------------------------
- * Este arquivo é o único lugar que precisa ser editado para o mapa.
- *
- * 1) IMAGENS — coloque os 4 arquivos em `public/mapa/` com estes nomes
- *    (ou troque os caminhos abaixo):
- *      public/mapa/primeiro-andar-limpo.png
- *      public/mapa/primeiro-andar-numerado.png
- *      public/mapa/andar-superior-limpo.png
- *      public/mapa/andar-superior-numerado.png
- *
- * 2) HOTSPOTS — cada hotspot usa coordenadas PERCENTUAIS da imagem
- *    (0 a 100). x/y = canto superior esquerdo, w/h = tamanho.
- *    Deixe `x` como `null` enquanto o hotspot não estiver posicionado:
- *    ele simplesmente não aparece no mapa e continua acessível pela lista.
- *
- * 3) `locationId` liga o hotspot a um local real de src/data/campaign.ts
- *    (LOCATIONS). Sem locationId o hotspot é apenas informativo.
+ * As quatro imagens canônicas devem ficar em `public/mapa/`.
+ * Coordenadas permanecem nulas enquanto a imagem não estiver no repositório:
+ * assim nenhuma posição de sala é inventada.
  */
 
 export type FloorId = "primeiro" | "superior";
@@ -25,7 +12,7 @@ export interface MapHotspot {
   id: string;
   name: string;
   floor: FloorId;
-  /** id de LOCATIONS em src/data/campaign.ts — opcional */
+  /** id do local canônico em campaignFull */
   locationId?: string;
   /** posição em % da imagem; null = ainda não posicionado */
   x: number | null;
@@ -56,28 +43,32 @@ const hs = (
   extra: Partial<MapHotspot> = {},
 ): MapHotspot => ({ id, name, floor, x: null, y: null, w: 10, h: 8, ...extra });
 
-/** Nomes oficiais. Ajuste x/y/w/h quando as imagens forem adicionadas. */
+/**
+ * Os nomes abaixo seguem exatamente a legenda escolhida pelo mestre.
+ * A ligação com locationId funciona mesmo sem coordenada visual: o cômodo
+ * continua acessível pela lista/inspector até as PNGs entrarem no repo.
+ */
 export const HOTSPOTS: MapHotspot[] = [
   // ---------------- PRIMEIRO ANDAR ----------------
-  hs("h-saida-principal", "Saída Principal", "primeiro"),
-  hs("h-recepcao", "Recepção", "primeiro"),
+  hs("h-saida-principal", "Saída Principal", "primeiro", { locationId: "l-saida-principal" }),
+  hs("h-recepcao", "Recepção", "primeiro", { locationId: "l-recepcao" }),
   hs("h-patio-central", "Pátio Central", "primeiro", { locationId: "l-patio" }),
-  hs("h-banheiros", "Banheiros", "primeiro"),
+  hs("h-banheiros", "Banheiros", "primeiro", { locationId: "l-banheiros-primeiro" }),
   hs("h-refeitorio", "Refeitório", "primeiro", { locationId: "l-refeitorio" }),
-  hs("h-cozinha", "Cozinha Industrial", "primeiro"),
-  hs("h-quadra", "Quadra", "primeiro"),
-  hs("h-vestiarios", "Vestiários M/F", "primeiro"),
-  hs("h-escadas", "Escadas para o andar superior", "primeiro"),
+  hs("h-cozinha", "Cozinha Industrial", "primeiro", { locationId: "l-cozinha" }),
+  hs("h-quadra", "Quadra", "primeiro", { locationId: "l-quadra" }),
+  hs("h-vestiarios", "Vestiários M/F", "primeiro", { locationId: "l-vestiarios" }),
+  hs("h-escadas", "Escadas para o andar superior", "primeiro", { locationId: "l-escadas" }),
 
   // ---------------- ANDAR SUPERIOR ----------------
-  hs("h-secretaria", "Secretaria", "superior"),
-  hs("h-conselho", "Sala do Conselho Estudantil", "superior"),
+  hs("h-secretaria", "Secretaria", "superior", { locationId: "l-secretaria" }),
+  hs("h-conselho", "Sala do Conselho Estudantil", "superior", { locationId: "l-conselho" }),
   hs("h-biblioteca", "Biblioteca", "superior", { locationId: "l-biblioteca" }),
-  hs("h-arquivo-morto", "Arquivo Morto da Biblioteca", "superior", { restricted: true }),
-  hs("h-lab-quimica", "Laboratório de Química", "superior"),
-  hs("h-lab-biologia", "Laboratório de Biologia", "superior"),
-  hs("h-salas-aula", "Salas de aula", "superior"),
-  hs("h-banheiro-sup", "Banheiro", "superior"),
-  hs("h-professores", "Sala dos Professores", "superior"),
-  hs("h-diretor", "Sala do Diretor", "superior", { restricted: true }),
+  hs("h-arquivo-morto", "Arquivo Morto da Biblioteca", "superior", { locationId: "l-arquivo-morto", restricted: true }),
+  hs("h-lab-quimica", "Laboratório de Química", "superior", { locationId: "l-lab-quimica" }),
+  hs("h-lab-biologia", "Laboratório de Biologia", "superior", { locationId: "l-lab-biologia" }),
+  hs("h-salas-aula", "Salas de aula", "superior", { locationId: "l-salas-aula" }),
+  hs("h-banheiro-sup", "Banheiro", "superior", { locationId: "l-banheiro-superior" }),
+  hs("h-professores", "Sala dos Professores", "superior", { locationId: "l-professores" }),
+  hs("h-diretor", "Sala do Diretor", "superior", { locationId: "l-diretor", restricted: true }),
 ];
