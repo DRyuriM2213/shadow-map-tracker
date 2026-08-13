@@ -8,17 +8,19 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { CLUES, LOCATIONS, SCENES } from "@/data/campaign";
+import { CLUES, LOCATIONS, SCENES } from "@/data/campaignFull";
+import { NPCS } from "@/data/npcs";
 import { useCampaign } from "@/store/campaign";
 
 const PAGES = [
   { to: "/", label: "Painel" },
-  { to: "/sessao", label: "Sessão ao vivo" },
+  { to: "/sessao-v2", label: "Sessão ao vivo" },
   { to: "/mapa", label: "Mapa interativo" },
   { to: "/diagrama", label: "Diagrama" },
   { to: "/timeline", label: "Timeline" },
   { to: "/locais", label: "Locais e salas" },
-  { to: "/pistas", label: "Pistas" },
+  { to: "/pistas-v2", label: "Pistas e documentos" },
+  { to: "/npcs", label: "NPCs e falas" },
   { to: "/personagens", label: "Personagens" },
   { to: "/consequencias", label: "Consequências" },
   { to: "/resumo", label: "Resumo" },
@@ -51,7 +53,7 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Buscar sala, pista, cena ou página…" />
+      <CommandInput placeholder="Buscar sala, documento, pista, NPC, cena ou página…" />
       <CommandList>
         <CommandEmpty>Nada encontrado.</CommandEmpty>
         <CommandGroup heading="Ações rápidas">
@@ -59,9 +61,7 @@ export function CommandPalette() {
         </CommandGroup>
         <CommandGroup heading="Páginas">
           {PAGES.map((p) => (
-            <CommandItem key={p.to} onSelect={() => run(() => navigate({ to: p.to }))}>
-              {p.label}
-            </CommandItem>
+            <CommandItem key={p.to} onSelect={() => run(() => navigate({ to: p.to }))}>{p.label}</CommandItem>
           ))}
         </CommandGroup>
         <CommandGroup heading="Salas — levar o grupo">
@@ -71,22 +71,27 @@ export function CommandPalette() {
             </CommandItem>
           ))}
         </CommandGroup>
-        <CommandGroup heading="Pistas — entregar">
+        <CommandGroup heading="Pistas e documentos — entregar">
           {CLUES.map((c) => (
             <CommandItem
               key={c.id}
-              value={`${c.name} ${c.category}`}
+              value={`${c.name} ${c.category} ${c.sourceDocument}`}
               onSelect={() => run(() => setClue(c.id, "encontrada", `Entregue via paleta — ${c.name}`))}
             >
-              {c.name}
+              {c.name}{c.sourceDocument && <span className="ml-2 font-mono text-[10px] text-muted-foreground">{c.sourceDocument}</span>}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandGroup heading="NPCs">
+          {NPCS.map((npc) => (
+            <CommandItem key={npc.id} value={`${npc.name} ${npc.role} ${npc.topics.map((t) => t.label).join(" ")}`} onSelect={() => run(() => navigate({ to: "/npcs" }))}>
+              {npc.name} <span className="ml-2 text-xs text-muted-foreground">{npc.role}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandGroup heading="Cenas">
           {SCENES.map((s) => (
-            <CommandItem key={s.id} value={s.title} onSelect={() => run(() => goToScene(s.id, "Ir para cena (paleta)"))}>
-              {s.title}
-            </CommandItem>
+            <CommandItem key={s.id} value={s.title} onSelect={() => run(() => goToScene(s.id, "Ir para cena (paleta)"))}>{s.title}</CommandItem>
           ))}
         </CommandGroup>
       </CommandList>
