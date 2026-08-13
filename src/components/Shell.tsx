@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { LOCATIONS, SCENES } from "@/data/campaign";
+import { LOCATIONS, SCENES } from "@/data/campaignFull";
 import { FlaskConical, Lock, Save } from "lucide-react";
 import { useClockEngine, useSessionPace, useTimelineStatus, paceLabel, paceTone } from "@/lib/clock";
 import { ClockControls, EventAlert } from "@/components/ClockBar";
@@ -18,7 +18,7 @@ const NAV = [
   { to: "/diagrama", label: "Diagrama" },
   { to: "/timeline", label: "Timeline" },
   { to: "/locais", label: "Locais e salas" },
-  { to: "/pistas", label: "Pistas" },
+  { to: "/pistas-v2", label: "Pistas" },
   { to: "/npcs", label: "NPCs" },
   { to: "/personagens", label: "Personagens" },
   { to: "/consequencias", label: "Consequências" },
