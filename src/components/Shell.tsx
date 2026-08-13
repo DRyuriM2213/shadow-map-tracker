@@ -151,12 +151,26 @@ export function Shell({ children }: { children: ReactNode }) {
               DIA {session.day}
             </span>
             <span className="font-mono text-base">{session.time}</span>
+            <span
+              className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}
+            >
+              {session.clockRunning ? `rodando ${session.clockSpeed}x` : "pausado"}
+            </span>
             <span className="text-muted-foreground">
               Local: <span className="text-foreground">{local?.name ?? "—"}</span>
             </span>
             <span className="text-muted-foreground">
               Cena: <span className="text-foreground">{scene?.title ?? "—"}</span>
             </span>
+            {proximo && countdown !== null && (
+              <span className="text-muted-foreground">
+                Próximo evento:{" "}
+                <span className="text-foreground">
+                  {proximo.title} em {countdown} min
+                </span>
+              </span>
+            )}
+            <span className={`stamp ${paceTone[pace]}`}>Ritmo: {paceLabel[pace]}</span>
           </div>
           <div className="ml-auto flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1 text-route-verde-claro">
@@ -174,6 +188,10 @@ export function Shell({ children }: { children: ReactNode }) {
               Sair
             </Button>
           </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 border-t border-border px-5 py-1.5">
+          <ClockControls compact />
+          <span className="text-[11px] text-muted-foreground">Ctrl+K para a paleta de comandos</span>
         </div>
         <nav className="flex flex-wrap gap-1 border-t border-border px-5 py-1.5">
           {NAV.map((n) => (
@@ -197,7 +215,12 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         )}
       </header>
+      <div className="px-5 pt-3">
+        <EventAlert />
+      </div>
       <main className="px-5 py-6">{children}</main>
+      <CommandPalette />
     </div>
   );
+
 }
