@@ -46,11 +46,7 @@ export const DOCUMENT_TITLES: Record<string, string> = {
 const makeDoc = (
   c: Partial<Clue> & Pick<Clue, "id" | "sourceDocument" | "mainLocationId" | "playerDescription" | "masterMeaning">,
 ): Clue => ({
-  id: c.id,
   category: "Documento",
-  playerDescription: c.playerDescription,
-  masterMeaning: c.masterMeaning,
-  mainLocationId: c.mainLocationId,
   alternativeLocationIds: [],
   dayAvailable: 1,
   recommendedDay: null,
@@ -65,7 +61,6 @@ const makeDoc = (
   partialSuccess: "O grupo encontra a referência e sabe exatamente qual registro procurar.",
   failureResult: "O documento continua existente e pode ser obtido por outro caminho.",
   criticalFailure: "A busca chama atenção do responsável pelo setor.",
-  sourceDocument: c.sourceDocument,
   isSecret: false,
   isFuture: false,
   medium: "documental",
