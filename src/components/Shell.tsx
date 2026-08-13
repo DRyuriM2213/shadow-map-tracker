@@ -13,12 +13,13 @@ import { CommandPalette } from "@/components/CommandPalette";
 
 const NAV = [
   { to: "/", label: "Painel" },
-  { to: "/sessao", label: "Sessão ao vivo" },
+  { to: "/sessao-v2", label: "Sessão ao vivo" },
   { to: "/mapa", label: "Mapa" },
   { to: "/diagrama", label: "Diagrama" },
   { to: "/timeline", label: "Timeline" },
   { to: "/locais", label: "Locais e salas" },
   { to: "/pistas", label: "Pistas" },
+  { to: "/npcs", label: "NPCs" },
   { to: "/personagens", label: "Personagens" },
   { to: "/consequencias", label: "Consequências" },
   { to: "/resumo", label: "Resumo" },
@@ -151,42 +152,22 @@ export function Shell({ children }: { children: ReactNode }) {
               DIA {session.day}
             </span>
             <span className="font-mono text-base">{session.time}</span>
-            <span
-              className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}
-            >
+            <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>
               {session.clockRunning ? `rodando ${session.clockSpeed}x` : "pausado"}
             </span>
-            <span className="text-muted-foreground">
-              Local: <span className="text-foreground">{local?.name ?? "—"}</span>
-            </span>
-            <span className="text-muted-foreground">
-              Cena: <span className="text-foreground">{scene?.title ?? "—"}</span>
-            </span>
+            <span className="text-muted-foreground">Local: <span className="text-foreground">{local?.name ?? "—"}</span></span>
+            <span className="text-muted-foreground">Cena: <span className="text-foreground">{scene?.title ?? "—"}</span></span>
             {proximo && countdown !== null && (
-              <span className="text-muted-foreground">
-                Próximo evento:{" "}
-                <span className="text-foreground">
-                  {proximo.title} em {countdown} min
-                </span>
-              </span>
+              <span className="text-muted-foreground">Próximo evento: <span className="text-foreground">{proximo.title} em {countdown} min</span></span>
             )}
             <span className={`stamp ${paceTone[pace]}`}>Ritmo: {paceLabel[pace]}</span>
           </div>
           <div className="ml-auto flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 text-route-verde-claro">
-              <Save className="size-3.5" /> Salvo automaticamente
-            </span>
-            <Button
-              size="sm"
-              variant={simulation ? "destructive" : "outline"}
-              onClick={toggleSimulation}
-            >
-              <FlaskConical className="mr-1 size-3.5" />
-              {simulation ? "Sair da simulação" : "Modo simulação"}
+            <span className="flex items-center gap-1 text-route-verde-claro"><Save className="size-3.5" /> Salvo automaticamente</span>
+            <Button size="sm" variant={simulation ? "destructive" : "outline"} onClick={toggleSimulation}>
+              <FlaskConical className="mr-1 size-3.5" />{simulation ? "Sair da simulação" : "Modo simulação"}
             </Button>
-            <Button size="sm" variant="ghost" onClick={logout}>
-              Sair
-            </Button>
+            <Button size="sm" variant="ghost" onClick={logout}>Sair</Button>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t border-border px-5 py-1.5">
@@ -200,27 +181,18 @@ export function Shell({ children }: { children: ReactNode }) {
               to={n.to}
               className={cn(
                 "rounded-sm px-3 py-1.5 text-xs transition-colors",
-                pathname === n.to
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                pathname === n.to ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
               )}
             >
               {n.label}
             </Link>
           ))}
         </nav>
-        {simulation && (
-          <div className="bg-destructive/20 px-5 py-1 text-center text-xs text-destructive-foreground">
-            MODO SIMULAÇÃO ATIVO — nada aqui altera a sessão real. Ao sair, o estado anterior é restaurado.
-          </div>
-        )}
+        {simulation && <div className="bg-destructive/20 px-5 py-1 text-center text-xs text-destructive-foreground">MODO SIMULAÇÃO ATIVO — nada aqui altera a sessão real. Ao sair, o estado anterior é restaurado.</div>}
       </header>
-      <div className="px-5 pt-3">
-        <EventAlert />
-      </div>
+      <div className="px-5 pt-3"><EventAlert /></div>
       <main className="px-5 py-6">{children}</main>
       <CommandPalette />
     </div>
   );
-
 }
