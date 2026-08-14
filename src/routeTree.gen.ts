@@ -24,20 +24,76 @@ import { Route as SessaoRouteImport } from './routes/sessao'
 import { Route as SessaoV2RouteImport } from './routes/sessao-v2'
 import { Route as TimelineRouteImport } from './routes/timeline'
 
-const IndexRoute = IndexRouteImport.update({ id: '/', path: '/', getParentRoute: () => rootRouteImport } as any)
-const ConsequenciasRoute = ConsequenciasRouteImport.update({ id: '/consequencias', path: '/consequencias', getParentRoute: () => rootRouteImport } as any)
-const DiagramaRoute = DiagramaRouteImport.update({ id: '/diagrama', path: '/diagrama', getParentRoute: () => rootRouteImport } as any)
-const EditarRoute = EditarRouteImport.update({ id: '/editar', path: '/editar', getParentRoute: () => rootRouteImport } as any)
-const LocaisRoute = LocaisRouteImport.update({ id: '/locais', path: '/locais', getParentRoute: () => rootRouteImport } as any)
-const MapaRoute = MapaRouteImport.update({ id: '/mapa', path: '/mapa', getParentRoute: () => rootRouteImport } as any)
-const NpcsRoute = NpcsRouteImport.update({ id: '/npcs', path: '/npcs', getParentRoute: () => rootRouteImport } as any)
-const PersonagensRoute = PersonagensRouteImport.update({ id: '/personagens', path: '/personagens', getParentRoute: () => rootRouteImport } as any)
-const PistasRoute = PistasRouteImport.update({ id: '/pistas', path: '/pistas', getParentRoute: () => rootRouteImport } as any)
-const PistasV2Route = PistasV2RouteImport.update({ id: '/pistas-v2', path: '/pistas-v2', getParentRoute: () => rootRouteImport } as any)
-const ResumoRoute = ResumoRouteImport.update({ id: '/resumo', path: '/resumo', getParentRoute: () => rootRouteImport } as any)
-const SessaoRoute = SessaoRouteImport.update({ id: '/sessao', path: '/sessao', getParentRoute: () => rootRouteImport } as any)
-const SessaoV2Route = SessaoV2RouteImport.update({ id: '/sessao-v2', path: '/sessao-v2', getParentRoute: () => rootRouteImport } as any)
-const TimelineRoute = TimelineRouteImport.update({ id: '/timeline', path: '/timeline', getParentRoute: () => rootRouteImport } as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsequenciasRoute = ConsequenciasRouteImport.update({
+  id: '/consequencias',
+  path: '/consequencias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiagramaRoute = DiagramaRouteImport.update({
+  id: '/diagrama',
+  path: '/diagrama',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditarRoute = EditarRouteImport.update({
+  id: '/editar',
+  path: '/editar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaisRoute = LocaisRouteImport.update({
+  id: '/locais',
+  path: '/locais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapaRoute = MapaRouteImport.update({
+  id: '/mapa',
+  path: '/mapa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NpcsRoute = NpcsRouteImport.update({
+  id: '/npcs',
+  path: '/npcs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PersonagensRoute = PersonagensRouteImport.update({
+  id: '/personagens',
+  path: '/personagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PistasRoute = PistasRouteImport.update({
+  id: '/pistas',
+  path: '/pistas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PistasV2Route = PistasV2RouteImport.update({
+  id: '/pistas-v2',
+  path: '/pistas-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResumoRoute = ResumoRouteImport.update({
+  id: '/resumo',
+  path: '/resumo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessaoRoute = SessaoRouteImport.update({
+  id: '/sessao',
+  path: '/sessao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SessaoV2Route = SessaoV2RouteImport.update({
+  id: '/sessao-v2',
+  path: '/sessao-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TimelineRoute = TimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -158,40 +214,126 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': { id: '/'; path: '/'; fullPath: '/'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport }
-    '/consequencias': { id: '/consequencias'; path: '/consequencias'; fullPath: '/consequencias'; preLoaderRoute: typeof ConsequenciasRouteImport; parentRoute: typeof rootRouteImport }
-    '/diagrama': { id: '/diagrama'; path: '/diagrama'; fullPath: '/diagrama'; preLoaderRoute: typeof DiagramaRouteImport; parentRoute: typeof rootRouteImport }
-    '/editar': { id: '/editar'; path: '/editar'; fullPath: '/editar'; preLoaderRoute: typeof EditarRouteImport; parentRoute: typeof rootRouteImport }
-    '/locais': { id: '/locais'; path: '/locais'; fullPath: '/locais'; preLoaderRoute: typeof LocaisRouteImport; parentRoute: typeof rootRouteImport }
-    '/mapa': { id: '/mapa'; path: '/mapa'; fullPath: '/mapa'; preLoaderRoute: typeof MapaRouteImport; parentRoute: typeof rootRouteImport }
-    '/npcs': { id: '/npcs'; path: '/npcs'; fullPath: '/npcs'; preLoaderRoute: typeof NpcsRouteImport; parentRoute: typeof rootRouteImport }
-    '/personagens': { id: '/personagens'; path: '/personagens'; fullPath: '/personagens'; preLoaderRoute: typeof PersonagensRouteImport; parentRoute: typeof rootRouteImport }
-    '/pistas': { id: '/pistas'; path: '/pistas'; fullPath: '/pistas'; preLoaderRoute: typeof PistasRouteImport; parentRoute: typeof rootRouteImport }
-    '/pistas-v2': { id: '/pistas-v2'; path: '/pistas-v2'; fullPath: '/pistas-v2'; preLoaderRoute: typeof PistasV2RouteImport; parentRoute: typeof rootRouteImport }
-    '/resumo': { id: '/resumo'; path: '/resumo'; fullPath: '/resumo'; preLoaderRoute: typeof ResumoRouteImport; parentRoute: typeof rootRouteImport }
-    '/sessao': { id: '/sessao'; path: '/sessao'; fullPath: '/sessao'; preLoaderRoute: typeof SessaoRouteImport; parentRoute: typeof rootRouteImport }
-    '/sessao-v2': { id: '/sessao-v2'; path: '/sessao-v2'; fullPath: '/sessao-v2'; preLoaderRoute: typeof SessaoV2RouteImport; parentRoute: typeof rootRouteImport }
-    '/timeline': { id: '/timeline'; path: '/timeline'; fullPath: '/timeline'; preLoaderRoute: typeof TimelineRouteImport; parentRoute: typeof rootRouteImport }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consequencias': {
+      id: '/consequencias'
+      path: '/consequencias'
+      fullPath: '/consequencias'
+      preLoaderRoute: typeof ConsequenciasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/diagrama': {
+      id: '/diagrama'
+      path: '/diagrama'
+      fullPath: '/diagrama'
+      preLoaderRoute: typeof DiagramaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editar': {
+      id: '/editar'
+      path: '/editar'
+      fullPath: '/editar'
+      preLoaderRoute: typeof EditarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/locais': {
+      id: '/locais'
+      path: '/locais'
+      fullPath: '/locais'
+      preLoaderRoute: typeof LocaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mapa': {
+      id: '/mapa'
+      path: '/mapa'
+      fullPath: '/mapa'
+      preLoaderRoute: typeof MapaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/npcs': {
+      id: '/npcs'
+      path: '/npcs'
+      fullPath: '/npcs'
+      preLoaderRoute: typeof NpcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/personagens': {
+      id: '/personagens'
+      path: '/personagens'
+      fullPath: '/personagens'
+      preLoaderRoute: typeof PersonagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pistas': {
+      id: '/pistas'
+      path: '/pistas'
+      fullPath: '/pistas'
+      preLoaderRoute: typeof PistasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pistas-v2': {
+      id: '/pistas-v2'
+      path: '/pistas-v2'
+      fullPath: '/pistas-v2'
+      preLoaderRoute: typeof PistasV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resumo': {
+      id: '/resumo'
+      path: '/resumo'
+      fullPath: '/resumo'
+      preLoaderRoute: typeof ResumoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessao': {
+      id: '/sessao'
+      path: '/sessao'
+      fullPath: '/sessao'
+      preLoaderRoute: typeof SessaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sessao-v2': {
+      id: '/sessao-v2'
+      path: '/sessao-v2'
+      fullPath: '/sessao-v2'
+      preLoaderRoute: typeof SessaoV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/timeline': {
+      id: '/timeline'
+      path: '/timeline'
+      fullPath: '/timeline'
+      preLoaderRoute: typeof TimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute,
-  ConsequenciasRoute,
-  DiagramaRoute,
-  EditarRoute,
-  LocaisRoute,
-  MapaRoute,
-  NpcsRoute,
-  PersonagensRoute,
-  PistasRoute,
-  PistasV2Route,
-  ResumoRoute,
-  SessaoRoute,
-  SessaoV2Route,
-  TimelineRoute,
+  IndexRoute: IndexRoute,
+  ConsequenciasRoute: ConsequenciasRoute,
+  DiagramaRoute: DiagramaRoute,
+  EditarRoute: EditarRoute,
+  LocaisRoute: LocaisRoute,
+  MapaRoute: MapaRoute,
+  NpcsRoute: NpcsRoute,
+  PersonagensRoute: PersonagensRoute,
+  PistasRoute: PistasRoute,
+  PistasV2Route: PistasV2Route,
+  ResumoRoute: ResumoRoute,
+  SessaoRoute: SessaoRoute,
+  SessaoV2Route: SessaoV2Route,
+  TimelineRoute: TimelineRoute,
 }
-export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
 import type { startInstance } from './start.ts'
