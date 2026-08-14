@@ -8,7 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { CLUES, LOCATIONS, SCENES } from "@/data/campaignFull";
+import { CLUES, LOCATIONS, SCENES, TIMELINE } from "@/data/campaignFull";
 import { NPCS } from "@/data/npcs";
 import { useCampaign } from "@/store/campaign";
 
@@ -16,14 +16,15 @@ const PAGES = [
   { to: "/", label: "Painel" },
   { to: "/sessao-v2", label: "Sessão ao vivo" },
   { to: "/mapa", label: "Mapa interativo" },
-  { to: "/diagrama", label: "Diagrama" },
   { to: "/timeline", label: "Timeline" },
   { to: "/locais", label: "Locais e salas" },
   { to: "/pistas-v2", label: "Pistas e documentos" },
   { to: "/npcs", label: "NPCs e falas" },
   { to: "/personagens", label: "Personagens" },
   { to: "/consequencias", label: "Consequências" },
+  { to: "/diagrama", label: "Diagrama" },
   { to: "/resumo", label: "Resumo" },
+  { to: "/assets", label: "Imagens e backup" },
   { to: "/editar", label: "Editar campanha" },
 ] as const;
 
@@ -53,15 +54,16 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Buscar sala, documento, pista, NPC, cena ou página…" />
+      <CommandInput placeholder="Buscar página, sala, documento, pista, NPC, evento ou cena…" />
       <CommandList>
         <CommandEmpty>Nada encontrado.</CommandEmpty>
         <CommandGroup heading="Ações rápidas">
           <CommandItem onSelect={() => run(toggleClock)}>Play / pausar relógio da campanha</CommandItem>
+          <CommandItem onSelect={() => run(() => navigate({ to: "/assets" }))}>Carregar mapas / imagens de NPC</CommandItem>
         </CommandGroup>
         <CommandGroup heading="Páginas">
           {PAGES.map((p) => (
-            <CommandItem key={p.to} onSelect={() => run(() => navigate({ to: p.to }))}>{p.label}</CommandItem>
+            <CommandItem key={p.to} value={`${p.label} página`} onSelect={() => run(() => navigate({ to: p.to }))}>{p.label}</CommandItem>
           ))}
         </CommandGroup>
         <CommandGroup heading="Salas — levar o grupo">
@@ -75,23 +77,31 @@ export function CommandPalette() {
           {CLUES.map((c) => (
             <CommandItem
               key={c.id}
-              value={`${c.name} ${c.category} ${c.sourceDocument}`}
+              value={`${c.name} ${c.category} ${c.sourceDocument} ${c.playerDescription} ${c.microLocation}`}
               onSelect={() => run(() => setClue(c.id, "encontrada", `Entregue via paleta — ${c.name}`))}
             >
-              {c.name}{c.sourceDocument && <span className="ml-2 font-mono text-[10px] text-muted-foreground">{c.sourceDocument}</span>}
+              <span className="truncate">{c.name}</span>
+              {c.sourceDocument && <span className="ml-2 truncate font-mono text-[10px] text-muted-foreground">{c.sourceDocument}</span>}
             </CommandItem>
           ))}
         </CommandGroup>
-        <CommandGroup heading="NPCs">
+        <CommandGroup heading="NPCs oficiais">
           {NPCS.map((npc) => (
-            <CommandItem key={npc.id} value={`${npc.name} ${npc.role} ${npc.topics.map((t) => t.label).join(" ")}`} onSelect={() => run(() => navigate({ to: "/npcs" }))}>
-              {npc.name} <span className="ml-2 text-xs text-muted-foreground">{npc.role}</span>
+            <CommandItem key={npc.id} value={`${npc.name} ${npc.role} ${npc.status} ${npc.topics.map((t) => t.label).join(" ")}`} onSelect={() => run(() => navigate({ to: "/npcs" }))}>
+              {npc.name} <span className="ml-2 text-xs text-muted-foreground">{npc.role} · {npc.status}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        <CommandGroup heading="Eventos da timeline">
+          {TIMELINE.map((event) => (
+            <CommandItem key={event.id} value={`${event.title} ${event.description} dia ${event.day} ${event.time}`} onSelect={() => run(() => navigate({ to: "/timeline" }))}>
+              <span className="font-mono text-xs">D{event.day} {event.time}</span><span className="ml-2">{event.title}</span>
             </CommandItem>
           ))}
         </CommandGroup>
         <CommandGroup heading="Cenas">
           {SCENES.map((s) => (
-            <CommandItem key={s.id} value={s.title} onSelect={() => run(() => goToScene(s.id, "Ir para cena (paleta)"))}>{s.title}</CommandItem>
+            <CommandItem key={s.id} value={`${s.title} ${s.masterDescription}`} onSelect={() => run(() => goToScene(s.id, "Ir para cena (paleta)"))}>{s.title}</CommandItem>
           ))}
         </CommandGroup>
       </CommandList>
