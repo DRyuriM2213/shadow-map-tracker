@@ -1,3 +1,5 @@
+export type CampaignDay = 1 | 2 | 3 | 4 | 5;
+
 export type RouteColor =
   | "amarelo"
   | "azul"
@@ -72,8 +74,8 @@ export interface Clue {
   mainLocationId: string;
   alternativeLocationIds: string[];
   /** Metadado de recomendação apenas — nunca bloqueia consulta. */
-  dayAvailable: 1 | 2;
-  recommendedDay: 1 | 2 | null;
+  dayAvailable: CampaignDay;
+  recommendedDay: CampaignDay | null;
   microLocation: string;
   exactLocation: string;
   suggestedSkill: string;
@@ -104,7 +106,7 @@ export interface CampaignLocation {
   sector: string;
   description: string;
   availability: string;
-  dayAvailable: (1 | 2)[];
+  dayAvailable: CampaignDay[];
   recommendedTime: string;
   prerequisites: string;
   people: string[];
@@ -130,7 +132,7 @@ export interface Choice {
 export interface Scene {
   id: string;
   title: string;
-  day: 1 | 2;
+  day: CampaignDay;
   time: string;
   locationId?: string | undefined;
   sceneType: "abertura" | "exploracao" | "decisao" | "evento" | "convergencia" | "encerramento";
@@ -173,12 +175,12 @@ export interface Consequence {
   affectedLocations: string[];
   affectedClues: string[];
   affectedCharacters: string[];
-  day: 1 | 2;
+  day: CampaignDay;
 }
 
 export interface TimelineEvent {
   id: string;
-  day: 1 | 2;
+  day: CampaignDay;
   time: string;
   title: string;
   description: string;
@@ -187,7 +189,7 @@ export interface TimelineEvent {
 
 export interface LogEntry {
   id: string;
-  day: 1 | 2;
+  day: CampaignDay;
   time: string;
   actionType: string;
   description: string;
@@ -201,7 +203,7 @@ export interface MasterNote {
   targetType: string;
   targetId: string;
   text: string;
-  day: 1 | 2;
+  day: CampaignDay;
   time: string;
   createdAt: string;
 }
@@ -209,7 +211,7 @@ export interface MasterNote {
 export interface ScheduledConsequence {
   id: string;
   consequenceId: string;
-  day: 1 | 2;
+  day: CampaignDay;
   time: string;
   status: "pendente" | "ativada" | "cancelada" | "adiada";
 }
