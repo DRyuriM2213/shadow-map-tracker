@@ -1,39 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { TESTS } from "@/data/campaign";
+import { TESTS } from "@/data/campaignFull";
 import { useCampaign } from "@/store/campaign";
 
 export type TestResult = "SUCESSO" | "SUCESSO PARCIAL" | "FALHA" | "FALHA CRÍTICA" | "RESOLVER SEM TESTE";
-
 const RESULTS: TestResult[] = ["SUCESSO", "SUCESSO PARCIAL", "FALHA", "FALHA CRÍTICA", "RESOLVER SEM TESTE"];
 
-export function TestDialog({
-  testId,
-  onClose,
-  onResult,
-}: {
-  testId: string | null;
-  onClose: () => void;
-  onResult?: (result: TestResult, narration: string, testName: string) => void;
-}) {
+export function TestDialog({ testId, onClose, onResult }: { testId: string | null; onClose: () => void; onResult?: (result: TestResult, narration: string, testName: string) => void }) {
   const applyTest = useCampaign((s) => s.applyTest);
+  const autoPause = useCampaign((s) => s.session.autoPauseOnTest);
+  const setClockRunning = useCampaign((s) => s.setClockRunning);
   const test = TESTS.find((t) => t.id === testId);
   const [feito, setFeito] = useState<TestResult | null>(null);
 
+  useEffect(() => {
+    setFeito(null);
+    if (testId && autoPause) setClockRunning(false);
+  }, [testId, autoPause, setClockRunning]);
+
   if (!test) return null;
 
-  const detailFor = (r: TestResult) =>
-    r === "SUCESSO"
-      ? test.success
-      : r === "SUCESSO PARCIAL"
-        ? test.partialSuccess
-        : r === "FALHA"
-          ? test.failure
-          : r === "FALHA CRÍTICA"
-            ? test.criticalFailure
-            : "Resolvido pela narrativa, sem rolagem.";
-
+  const detailFor = (r: TestResult) => r === "SUCESSO" ? test.success : r === "SUCESSO PARCIAL" ? test.partialSuccess : r === "FALHA" ? test.failure : r === "FALHA CRÍTICA" ? test.criticalFailure : "Resolvido pela narrativa, sem rolagem.";
   const narrationFor = (r: TestResult) => {
     const detail = detailFor(r);
     if (r === "SUCESSO") return `Depois de observar com atenção, o detalhe finalmente fica claro. ${detail}`;
@@ -44,22 +32,12 @@ export function TestDialog({
   };
 
   return (
-    <Dialog
-      open={!!testId}
-      onOpenChange={(o) => {
-        if (!o) {
-          setFeito(null);
-          onClose();
-        }
-      }}
-    >
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl">{test.name}</DialogTitle>
-        </DialogHeader>
+    <Dialog open={!!testId} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader><DialogTitle className="font-display text-2xl">{test.name}</DialogTitle></DialogHeader>
         <div className="space-y-3 text-sm">
           <p className="text-muted-foreground">{test.description}</p>
-          <dl className="grid grid-cols-2 gap-3">
+          <dl className="grid gap-3 sm:grid-cols-2">
             <Field label="Dificuldade sugerida" value={test.difficulty} />
             <Field label="Quem pode realizar" value={test.suggestedCharacters} />
             <Field label="Vantagem" value={test.advantages} />
@@ -73,37 +51,14 @@ export function TestDialog({
             <Row label="Falha segura (contingência)" value={test.fallback} tone="text-route-cinza" />
           </div>
           <div className="flex flex-wrap gap-2 pt-2">
-            {RESULTS.map((r) => (
-              <Button
-                key={r}
-                size="sm"
-                variant={r.startsWith("FALHA") ? "destructive" : "default"}
-                onClick={() => {
-                  applyTest(test.id, r, detailFor(r), test.clueId);
-                  setFeito(r);
-                  onResult?.(r, narrationFor(r), test.name);
-                }}
-              >
-                {r}
-              </Button>
-            ))}
+            {RESULTS.map((r) => <Button key={r} size="sm" variant={r.startsWith("FALHA") ? "destructive" : "default"} onClick={() => { applyTest(test.id, r, detailFor(r), test.clueId); setFeito(r); onResult?.(r, narrationFor(r), test.name); }}>{r}</Button>)}
           </div>
-          {feito && (
-            <div className="rounded-sm border border-primary/60 bg-primary/10 p-3">
-              <p className="stamp text-primary">Narrar resultado — {feito}</p>
-              <p className="mt-1 font-display text-base leading-relaxed">{narrationFor(feito)}</p>
-            </div>
-          )}
+          {feito && <div className="rounded-sm border border-primary/60 bg-primary/10 p-3"><p className="stamp text-primary">Narrar resultado — {feito}</p><p className="mt-1 font-display text-base leading-relaxed">{narrationFor(feito)}</p></div>}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return <div><dt className="stamp text-muted-foreground">{label}</dt><dd>{value}</dd></div>;
-}
-
-function Row({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return <p className="text-sm"><span className={`stamp ${tone}`}>{label}: </span>{value}</p>;
-}
+function Field({ label, value }: { label: string; value: string }) { return <div><dt className="stamp text-muted-foreground">{label}</dt><dd>{value}</dd></div>; }
+function Row({ label, value, tone }: { label: string; value: string; tone: string }) { return <p className="text-sm"><span className={`stamp ${tone}`}>{label}: </span>{value}</p>; }
