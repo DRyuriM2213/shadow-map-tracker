@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { TIMELINE } from "@/data/campaignFull";
+import { V3_EVENTS } from "@/data/sessionV3";
 import { useCampaign, toMinutes } from "@/store/campaign";
 import type { TimelineEvent } from "@/lib/types";
 
@@ -9,15 +10,12 @@ export const DC_PRESETS: { label: string; value: number }[] = [
   { label: "Difícil", value: 20 },
   { label: "Muito difícil", value: 25 },
 ];
-
 export const SPEEDS = [1, 5, 10, 30, 60];
 
-/** Motor de tempo: 10x = 1 minuto de jogo a cada 6 segundos reais. */
 export function useClockEngine() {
   const running = useCampaign((s) => s.session.clockRunning);
   const speed = useCampaign((s) => s.session.clockSpeed);
   const tick = useCampaign((s) => s.tickClock);
-
   useEffect(() => {
     if (!running || speed <= 0) return;
     const intervalMs = (60 / speed) * 1000;
@@ -30,18 +28,21 @@ export function useTimelineStatus() {
   const day = useCampaign((s) => s.session.day);
   const time = useCampaign((s) => s.session.time);
   const activated = useCampaign((s) => s.session.activatedEvents);
+  const recapApplied = useCampaign((s) => s.session.recapApplied);
 
   return useMemo(() => {
     const now = toMinutes(time);
-    const doDia = TIMELINE.filter((e) => e.day === day);
-    const pendentes = doDia.filter((e) => !activated.includes(e.id));
-    const atual = pendentes.filter((e) => e.mandatory && toMinutes(e.time) <= now);
-    const proximo = pendentes.filter((e) => toMinutes(e.time) > now).sort((a, b) => toMinutes(a.time) - toMinutes(b.time))[0];
-    const agora: TimelineEvent | undefined = atual.sort((a, b) => toMinutes(b.time) - toMinutes(a.time))[0];
-    const atrasados = atual.filter((e) => toMinutes(e.time) < now - 5);
-    const countdown = proximo ? toMinutes(proximo.time) - now : null;
-    return { agora, proximo, atrasados, countdown };
-  }, [day, time, activated]);
+    const source: TimelineEvent[] = recapApplied
+      ? V3_EVENTS.filter((e) => e.day === day).map((e) => ({ id: e.id, day: e.day, time: e.time, title: e.title, description: e.description, mandatory: e.kind === "CANON" || e.kind === "CLÍMAX" }))
+      : TIMELINE.filter((e) => e.day === day);
+    const pending = source.filter((e) => !activated.includes(e.id));
+    const due = pending.filter((e) => e.mandatory && toMinutes(e.time) <= now);
+    const next = pending.filter((e) => toMinutes(e.time) > now).sort((a, b) => toMinutes(a.time) - toMinutes(b.time))[0];
+    const current = due.sort((a, b) => toMinutes(b.time) - toMinutes(a.time))[0];
+    const overdue = due.filter((e) => toMinutes(e.time) < now - 5);
+    const countdown = next ? toMinutes(next.time) - now : null;
+    return { agora: current, proximo: next, atrasados: overdue, countdown };
+  }, [day, time, activated, recapApplied]);
 }
 
 export type Pace = "adiantado" | "no-ritmo" | "atrasado";
@@ -52,14 +53,17 @@ export function useSessionPace(): { pace: Pace; narrativo: number; real: number 
   const realStart = useCampaign((s) => s.session.realStart);
   const realEnd = useCampaign((s) => s.session.realEnd);
 
-  const narrativoTotal = 2 * 13.25 * 60;
-  const decorridoNarrativo = (day === 2 ? 13.25 * 60 : 0) + Math.max(0, toMinutes(time) - toMinutes("08:00"));
-  const narrativo = Math.min(1, decorridoNarrativo / narrativoTotal);
-  const agora = new Date();
-  const nowReal = agora.getHours() * 60 + agora.getMinutes();
-  const ini = toMinutes(realStart);
-  const fim = toMinutes(realEnd);
-  const real = fim > ini ? Math.min(1, Math.max(0, (nowReal - ini) / (fim - ini))) : 0;
+  // Indicador aproximado: agora considera os cinco dias, sem presumir que a mesa
+  // precisa percorrer cada minuto narrativo. É só um auxílio visual.
+  const dayMinutes = 13.5 * 60;
+  const narrativeTotal = 5 * dayMinutes;
+  const elapsedNarrative = (day - 1) * dayMinutes + Math.max(0, Math.min(dayMinutes, toMinutes(time) - toMinutes("08:00")));
+  const narrativo = Math.min(1, elapsedNarrative / narrativeTotal);
+  const now = new Date();
+  const nowReal = now.getHours() * 60 + now.getMinutes();
+  const start = toMinutes(realStart);
+  const end = toMinutes(realEnd);
+  const real = end > start ? Math.min(1, Math.max(0, (nowReal - start) / (end - start))) : 0;
   const diff = narrativo - real;
   const pace: Pace = diff > 0.08 ? "adiantado" : diff < -0.08 ? "atrasado" : "no-ritmo";
   return { pace, narrativo, real };
