@@ -6,18 +6,20 @@ import { useCampaign } from "@/store/campaign";
 
 export type TestResult = "SUCESSO" | "SUCESSO PARCIAL" | "FALHA" | "FALHA CRÍTICA" | "RESOLVER SEM TESTE";
 const RESULTS: TestResult[] = ["SUCESSO", "SUCESSO PARCIAL", "FALHA", "FALHA CRÍTICA", "RESOLVER SEM TESTE"];
+const ALREADY_EVIDENCE = ["encontrada", "interpretada", "contingencia"];
 
 export function TestDialog({ testId, onClose, onResult }: { testId: string | null; onClose: () => void; onResult?: (result: TestResult, narration: string, testName: string) => void }) {
   const applyTest = useCampaign((s) => s.applyTest);
-  const autoPause = useCampaign((s) => s.session.autoPauseOnTest);
+  const setClue = useCampaign((s) => s.setClue);
+  const session = useCampaign((s) => s.session);
   const setClockRunning = useCampaign((s) => s.setClockRunning);
   const test = TESTS.find((t) => t.id === testId);
   const [feito, setFeito] = useState<TestResult | null>(null);
 
   useEffect(() => {
     setFeito(null);
-    if (testId && autoPause) setClockRunning(false);
-  }, [testId, autoPause, setClockRunning]);
+    if (testId && session.autoPauseOnTest) setClockRunning(false);
+  }, [testId, session.autoPauseOnTest, setClockRunning]);
 
   if (!test) return null;
 
@@ -29,6 +31,26 @@ export function TestDialog({ testId, onClose, onResult }: { testId: string | nul
     if (r === "FALHA") return `A tentativa não entrega uma resposta segura agora. ${detail}`;
     if (r === "FALHA CRÍTICA") return `A tentativa dá errado de um jeito perceptível e deixa consequência. ${detail}`;
     return "A situação é resolvida pela narrativa, sem necessidade de rolagem.";
+  };
+
+  const resolve = (r: TestResult) => {
+    const clueId = test.clueId;
+    const current = clueId ? session.clueStatus[clueId] : undefined;
+    const alreadyCounted = current ? ALREADY_EVIDENCE.includes(current) : false;
+
+    // O store antigo soma atenção duas vezes quando FALHA CRÍTICA recebe clueId.
+    // Registramos a falha crítica sem clueId e atualizamos a pista separadamente,
+    // garantindo apenas +1 de atenção.
+    if (r === "FALHA CRÍTICA" && clueId) {
+      applyTest(test.id, r, detailFor(r));
+      setClue(clueId, "perdida", `Resultado do teste ${test.name}`);
+    } else {
+      // Repetir um sucesso numa pista já contabilizada não deve inflar evidenceCount.
+      applyTest(test.id, r, detailFor(r), alreadyCounted ? undefined : clueId);
+    }
+
+    setFeito(r);
+    onResult?.(r, narrationFor(r), test.name);
   };
 
   return (
@@ -50,9 +72,7 @@ export function TestDialog({ testId, onClose, onResult }: { testId: string | nul
             <Row label="Falha crítica" value={test.criticalFailure} tone="text-destructive" />
             <Row label="Falha segura (contingência)" value={test.fallback} tone="text-route-cinza" />
           </div>
-          <div className="flex flex-wrap gap-2 pt-2">
-            {RESULTS.map((r) => <Button key={r} size="sm" variant={r.startsWith("FALHA") ? "destructive" : "default"} onClick={() => { applyTest(test.id, r, detailFor(r), test.clueId); setFeito(r); onResult?.(r, narrationFor(r), test.name); }}>{r}</Button>)}
-          </div>
+          <div className="flex flex-wrap gap-2 pt-2">{RESULTS.map((r) => <Button key={r} size="sm" variant={r.startsWith("FALHA") ? "destructive" : "default"} onClick={() => resolve(r)}>{r}</Button>)}</div>
           {feito && <div className="rounded-sm border border-primary/60 bg-primary/10 p-3"><p className="stamp text-primary">Narrar resultado — {feito}</p><p className="mt-1 font-display text-base leading-relaxed">{narrationFor(feito)}</p></div>}
         </div>
       </DialogContent>
