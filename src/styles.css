@@ -152,3 +152,18 @@
   50% { box-shadow: 0 0 0 6px oklch(0.8 0.16 145 / 0); }
 }
 @utility pulse-available { animation: pulse-node 2.2s ease-in-out infinite; }
+
+/* Player terminal intros — original visual language for Berço Vazio. */
+.player-scanlines {
+  background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255,255,255,.025) 3px 4px);
+  mix-blend-mode: screen;
+}
+.player-glitch-blue { background: radial-gradient(circle at 50% 45%, rgba(34,211,238,.12), transparent 35%), repeating-linear-gradient(90deg, transparent 0 13%, rgba(34,211,238,.035) 13.2% 13.5%, transparent 13.7% 26%); animation: terminal-flicker 3.1s steps(2,end) infinite; }
+.player-glitch-red { background: radial-gradient(circle at 50% 45%, rgba(220,38,38,.14), transparent 38%), repeating-linear-gradient(105deg, transparent 0 18%, rgba(220,38,38,.04) 18.3% 18.8%, transparent 19% 31%); animation: terminal-flicker 2.4s steps(2,end) infinite; }
+.player-glitch-amber { background: linear-gradient(rgba(251,191,36,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(251,191,36,.025) 1px, transparent 1px); background-size: 28px 28px; animation: terminal-flicker 4s steps(2,end) infinite; }
+.player-intro-reveal { animation: player-reveal .65s cubic-bezier(.2,.8,.2,1) both, text-glitch 2.6s 1s steps(2,end) infinite; }
+.player-pentagram { transform-origin: center; animation: pentagram-turn 18s linear infinite; }
+@keyframes player-reveal { from { opacity: 0; transform: translateY(8px); filter: blur(6px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@keyframes terminal-flicker { 0%, 94%, 100% { opacity: .92; transform: translateX(0); } 95% { opacity: .55; transform: translateX(3px); } 96% { opacity: 1; transform: translateX(-2px); } }
+@keyframes text-glitch { 0%, 89%, 100% { text-shadow: none; } 90% { text-shadow: 3px 0 rgba(34,211,238,.65), -2px 0 rgba(239,68,68,.45); } 92% { text-shadow: -2px 0 rgba(34,211,238,.5), 2px 0 rgba(239,68,68,.35); } }
+@keyframes pentagram-turn { to { transform: rotate(360deg); } }
