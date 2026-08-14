@@ -15,14 +15,15 @@ const NAV = [
   { to: "/", label: "Painel" },
   { to: "/sessao-v2", label: "Sessão ao vivo" },
   { to: "/mapa", label: "Mapa" },
-  { to: "/diagrama", label: "Diagrama" },
   { to: "/timeline", label: "Timeline" },
   { to: "/locais", label: "Locais e salas" },
   { to: "/pistas-v2", label: "Pistas" },
   { to: "/npcs", label: "NPCs" },
   { to: "/personagens", label: "Personagens" },
   { to: "/consequencias", label: "Consequências" },
+  { to: "/diagrama", label: "Diagrama" },
   { to: "/resumo", label: "Resumo" },
+  { to: "/assets", label: "Imagens / Backup" },
   { to: "/editar", label: "Editar campanha" },
 ] as const;
 
@@ -35,7 +36,7 @@ function LoginScreen() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="dossier w-full max-w-md rounded-sm p-8">
+      <div className="dossier w-full max-w-md rounded-sm p-6 sm:p-8">
         <p className="stamp text-primary">Acesso restrito — painel do mestre</p>
         <h1 className="mt-3 text-3xl font-semibold">OPERAÇÃO BERÇO VAZIO</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -53,25 +54,11 @@ function LoginScreen() {
           >
             <div className="space-y-2">
               <Label htmlFor="pin">PIN rápido</Label>
-              <Input
-                id="pin"
-                inputMode="numeric"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="••••"
-              />
+              <Input id="pin" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="••••" />
             </div>
             {erro && <p className="text-sm text-destructive">{erro}</p>}
-            <Button type="submit" className="w-full">
-              Entrar com PIN
-            </Button>
-            <button
-              type="button"
-              className="w-full text-xs text-muted-foreground underline"
-              onClick={() => setPin("")}
-            >
-              Usar e-mail e senha
-            </button>
+            <Button type="submit" className="w-full">Entrar com PIN</Button>
+            <button type="button" className="w-full text-xs text-muted-foreground underline" onClick={() => setPin("")}>Usar e-mail e senha</button>
           </form>
         ) : (
           <form
@@ -85,39 +72,19 @@ function LoginScreen() {
               login();
             }}
           >
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pass">Senha</Label>
-              <Input id="pass" type="password" value={pass} onChange={(e) => setPass(e.target.value)} />
-            </div>
+            <div className="space-y-2"><Label htmlFor="email">E-mail</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+            <div className="space-y-2"><Label htmlFor="pass">Senha</Label><Input id="pass" type="password" value={pass} onChange={(e) => setPass(e.target.value)} /></div>
             <div className="space-y-2">
               <Label htmlFor="novopin">PIN rápido para os próximos acessos (opcional)</Label>
-              <Input
-                id="novopin"
-                inputMode="numeric"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Ex.: 1937"
-              />
+              <Input id="novopin" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} placeholder="Ex.: 1937" />
             </div>
             {erro && <p className="text-sm text-destructive">{erro}</p>}
-            <Button
-              type="submit"
-              className="w-full"
-              onClick={() => {
-                if (code.length >= 3) setPin(code);
-              }}
-            >
+            <Button type="submit" className="w-full" onClick={() => { if (code.length >= 3) setPin(code); }}>
               <Lock className="mr-2 size-4" /> Entrar no painel
             </Button>
           </form>
         )}
-        <p className="mt-6 text-xs text-muted-foreground">
-          Acesso local e privado. Não existe visão pública para jogadores nesta versão.
-        </p>
+        <p className="mt-6 text-xs text-muted-foreground">Acesso local e privado. Não existe visão pública para jogadores nesta versão.</p>
       </div>
     </div>
   );
@@ -142,45 +109,41 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3">
-          <div>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-3 py-2.5 sm:px-5 sm:py-3">
+          <div className="shrink-0">
             <p className="stamp text-primary">Operação Berço Vazio</p>
             <p className="text-sm font-semibold">Painel do Mestre</p>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <span className="rounded-sm bg-primary px-2 py-1 font-semibold text-primary-foreground">
-              DIA {session.day}
-            </span>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+            <span className="rounded-sm bg-primary px-2 py-1 font-semibold text-primary-foreground">DIA {session.day}</span>
             <span className="font-mono text-base">{session.time}</span>
-            <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>
-              {session.clockRunning ? `rodando ${session.clockSpeed}x` : "pausado"}
-            </span>
-            <span className="text-muted-foreground">Local: <span className="text-foreground">{local?.name ?? "—"}</span></span>
-            <span className="text-muted-foreground">Cena: <span className="text-foreground">{scene?.title ?? "—"}</span></span>
-            {proximo && countdown !== null && (
-              <span className="text-muted-foreground">Próximo evento: <span className="text-foreground">{proximo.title} em {countdown} min</span></span>
-            )}
-            <span className={`stamp ${paceTone[pace]}`}>Ritmo: {paceLabel[pace]}</span>
+            <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>{session.clockRunning ? `rodando ${session.clockSpeed}x` : "pausado"}</span>
+            <span className="hidden text-muted-foreground md:inline">Local: <span className="text-foreground">{local?.name ?? "—"}</span></span>
+            <span className="hidden text-muted-foreground xl:inline">Cena: <span className="text-foreground">{scene?.title ?? "—"}</span></span>
+            {proximo && countdown !== null && <span className="hidden text-muted-foreground lg:inline">Próximo: <span className="text-foreground">{proximo.title} · {countdown} min</span></span>}
+            <span className={`hidden stamp 2xl:inline ${paceTone[pace]}`}>Ritmo: {paceLabel[pace]}</span>
           </div>
-          <div className="ml-auto flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1 text-route-verde-claro"><Save className="size-3.5" /> Salvo automaticamente</span>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 text-xs">
+            <span className="hidden items-center gap-1 text-route-verde-claro xl:flex"><Save className="size-3.5" /> Salvo</span>
             <Button size="sm" variant={simulation ? "destructive" : "outline"} onClick={toggleSimulation}>
-              <FlaskConical className="mr-1 size-3.5" />{simulation ? "Sair da simulação" : "Modo simulação"}
+              <FlaskConical className="size-3.5 sm:mr-1" /><span className="hidden sm:inline">{simulation ? "Sair da simulação" : "Simulação"}</span>
             </Button>
             <Button size="sm" variant="ghost" onClick={logout}>Sair</Button>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3 border-t border-border px-5 py-1.5">
-          <ClockControls compact />
-          <span className="text-[11px] text-muted-foreground">Ctrl+K para a paleta de comandos</span>
+
+        <div className="flex items-center gap-3 overflow-x-auto border-t border-border px-3 py-1.5 sm:px-5">
+          <div className="shrink-0"><ClockControls compact /></div>
+          <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">Ctrl+K para busca rápida</span>
         </div>
-        <nav className="flex flex-wrap gap-1 border-t border-border px-5 py-1.5">
+
+        <nav className="flex flex-nowrap gap-1 overflow-x-auto border-t border-border px-3 py-1.5 sm:px-5 [scrollbar-width:thin]">
           {NAV.map((n) => (
             <Link
               key={n.to}
               to={n.to}
               className={cn(
-                "rounded-sm px-3 py-1.5 text-xs transition-colors",
+                "shrink-0 rounded-sm px-3 py-1.5 text-xs transition-colors",
                 pathname === n.to ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
               )}
             >
@@ -188,10 +151,10 @@ export function Shell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        {simulation && <div className="bg-destructive/20 px-5 py-1 text-center text-xs text-destructive-foreground">MODO SIMULAÇÃO ATIVO — nada aqui altera a sessão real. Ao sair, o estado anterior é restaurado.</div>}
+        {simulation && <div className="bg-destructive/20 px-3 py-1 text-center text-xs text-destructive-foreground sm:px-5">MODO SIMULAÇÃO ATIVO — nada aqui altera a sessão real. Ao sair, o estado anterior é restaurado.</div>}
       </header>
-      <div className="px-5 pt-3"><EventAlert /></div>
-      <main className="px-5 py-6">{children}</main>
+      <div className="px-3 pt-3 sm:px-5"><EventAlert /></div>
+      <main className="px-3 py-4 sm:px-5 sm:py-6">{children}</main>
       <CommandPalette />
     </div>
   );
