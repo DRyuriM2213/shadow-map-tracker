@@ -1,0 +1,124 @@
+export type CloudRole = "MASTER" | "PLAYER";
+
+export interface CloudSession {
+  role: CloudRole;
+  token: string;
+  player?: {
+    id: string;
+    playerName: string;
+    characterName: string;
+    roleType: "AGENTE_DA_ORDEM" | "VILAO" | "CIVIL";
+    avatarUrl?: string | null;
+    canEditSheet: boolean;
+  };
+}
+
+const CLOUD_SESSION_KEY = "berco-vazio-cloud-session";
+
+function env(name: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISHABLE_KEY") {
+  return (import.meta.env[name] as string | undefined)?.trim();
+}
+
+export function cloudConfigured() {
+  return Boolean(env("VITE_SUPABASE_URL") && env("VITE_SUPABASE_PUBLISHABLE_KEY"));
+}
+
+export function getCloudSession(): CloudSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CLOUD_SESSION_KEY);
+    return raw ? (JSON.parse(raw) as CloudSession) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCloudSession(value: CloudSession | null) {
+  if (typeof window === "undefined") return;
+  if (!value) sessionStorage.removeItem(CLOUD_SESSION_KEY);
+  else sessionStorage.setItem(CLOUD_SESSION_KEY, JSON.stringify(value));
+}
+
+export async function rpc<T = Record<string, unknown>>(
+  fn: string,
+  body: Record<string, unknown> = {},
+): Promise<T> {
+  const url = env("VITE_SUPABASE_URL");
+  const key = env("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (!url || !key) throw new Error("Lovable Cloud ainda não está disponível neste build.");
+
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const text = await response.text();
+    let payload: unknown = null;
+    try { payload = text ? JSON.parse(text) : null; } catch { payload = text; }
+    if (!response.ok) {
+      const detail = typeof payload === "object" && payload && "message" in payload
+        ? String((payload as { message?: unknown }).message)
+        : `Erro ${response.status}`;
+      throw new Error(detail);
+    }
+    return payload as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("O Cloud demorou para responder. Tente novamente.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+export async function loginCloud(pin: string): Promise<CloudSession | null> {
+  if (!cloudConfigured()) return null;
+
+  const master = await rpc<{ ok: boolean; token?: string }>("master_login", { p_pin: pin });
+  if (master.ok && master.token) {
+    const session: CloudSession = { role: "MASTER", token: master.token };
+    setCloudSession(session);
+    return session;
+  }
+
+  const player = await rpc<{
+    ok: boolean;
+    token?: string;
+    player?: CloudSession["player"];
+  }>("player_login", { p_pin: pin });
+  if (player.ok && player.token && player.player) {
+    const session: CloudSession = { role: "PLAYER", token: player.token, player: player.player };
+    setCloudSession(session);
+    return session;
+  }
+  return null;
+}
+
+export async function logoutCloud() {
+  const session = getCloudSession();
+  setCloudSession(null);
+  if (!session || !cloudConfigured()) return;
+  try {
+    await rpc("logout_session", { p_token: session.token, p_role: session.role });
+  } catch {
+    // Sessão local deve encerrar mesmo se o backend estiver indisponível.
+  }
+}
+
+export function requireMasterToken() {
+  const session = getCloudSession();
+  return session?.role === "MASTER" ? session.token : null;
+}
+
+export function requirePlayerSession() {
+  const session = getCloudSession();
+  return session?.role === "PLAYER" ? session : null;
+}
