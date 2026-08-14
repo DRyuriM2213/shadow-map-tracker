@@ -6,7 +6,7 @@ import { useCampaign } from "@/store/campaign";
 
 export type TestResult = "SUCESSO" | "SUCESSO PARCIAL" | "FALHA" | "FALHA CRÍTICA" | "RESOLVER SEM TESTE";
 const RESULTS: TestResult[] = ["SUCESSO", "SUCESSO PARCIAL", "FALHA", "FALHA CRÍTICA", "RESOLVER SEM TESTE"];
-const ALREADY_EVIDENCE = ["encontrada", "interpretada", "contingencia"];
+const ALREADY_EVIDENCE = ["encontrada", "interpretada", "contingencia", "encontrada-parcialmente"];
 
 export function TestDialog({ testId, onClose, onResult }: { testId: string | null; onClose: () => void; onResult?: (result: TestResult, narration: string, testName: string) => void }) {
   const applyTest = useCampaign((s) => s.applyTest);
@@ -24,13 +24,15 @@ export function TestDialog({ testId, onClose, onResult }: { testId: string | nul
   if (!test) return null;
 
   const detailFor = (r: TestResult) => r === "SUCESSO" ? test.success : r === "SUCESSO PARCIAL" ? test.partialSuccess : r === "FALHA" ? test.failure : r === "FALHA CRÍTICA" ? test.criticalFailure : "Resolvido pela narrativa, sem rolagem.";
+
+  // Texto seguro para leitura em voz alta. O efeito mecânico/canônico abaixo fica
+  // separado porque vários testes antigos contêm informação exclusiva do mestre.
   const narrationFor = (r: TestResult) => {
-    const detail = detailFor(r);
-    if (r === "SUCESSO") return `Depois de observar com atenção, o detalhe finalmente fica claro. ${detail}`;
-    if (r === "SUCESSO PARCIAL") return `Vocês conseguem avançar, mas a resposta ainda vem incompleta. ${detail}`;
-    if (r === "FALHA") return `A tentativa não entrega uma resposta segura agora. ${detail}`;
-    if (r === "FALHA CRÍTICA") return `A tentativa dá errado de um jeito perceptível e deixa consequência. ${detail}`;
-    return "A situação é resolvida pela narrativa, sem necessidade de rolagem.";
+    if (r === "SUCESSO") return "A abordagem funciona. O detalhe que vocês estavam tentando confirmar se torna claro o bastante para avançar a investigação. O mestre pode agora entregar a informação correspondente à pista.";
+    if (r === "SUCESSO PARCIAL") return "Vocês conseguem avançar, mas a resposta vem incompleta. Há uma parte útil e confiável aqui, enquanto o restante ainda exige tempo, outra fonte ou uma abordagem diferente.";
+    if (r === "FALHA") return "A tentativa não produz uma conclusão segura agora. O que vocês observam ainda permite novas abordagens; nada indica que essa linha de investigação tenha se perdido para sempre.";
+    if (r === "FALHA CRÍTICA") return "A tentativa chama atenção ou cria uma complicação perceptível. O objetivo não é alcançado agora, e a situação ao redor fica mais difícil — mas a informação importante ainda pode ser recuperada de outra forma.";
+    return "A situação se resolve pela própria narrativa. Não é necessário fazer uma rolagem para prosseguir.";
   };
 
   const resolve = (r: TestResult) => {
@@ -38,14 +40,12 @@ export function TestDialog({ testId, onClose, onResult }: { testId: string | nul
     const current = clueId ? session.clueStatus[clueId] : undefined;
     const alreadyCounted = current ? ALREADY_EVIDENCE.includes(current) : false;
 
-    // O store antigo soma atenção duas vezes quando FALHA CRÍTICA recebe clueId.
-    // Registramos a falha crítica sem clueId e atualizamos a pista separadamente,
-    // garantindo apenas +1 de atenção.
     if (r === "FALHA CRÍTICA" && clueId) {
+      // Aplica a consequência mecânica apenas uma vez e mantém uma rota de
+      // contingência para a pista; nenhuma evidência essencial some para sempre.
       applyTest(test.id, r, detailFor(r));
-      setClue(clueId, "perdida", `Resultado do teste ${test.name}`);
+      setClue(clueId, "contingencia", `Falha crítica em ${test.name}; pista deve reaparecer por outra abordagem.`);
     } else {
-      // Repetir um sucesso numa pista já contabilizada não deve inflar evidenceCount.
       applyTest(test.id, r, detailFor(r), alreadyCounted ? undefined : clueId);
     }
 
@@ -65,15 +65,18 @@ export function TestDialog({ testId, onClose, onResult }: { testId: string | nul
             <Field label="Vantagem" value={test.advantages} />
             <Field label="Desvantagem" value={test.disadvantages} />
           </dl>
-          <div className="space-y-2 rounded-sm border border-border p-3">
-            <Row label="Sucesso" value={test.success} tone="text-route-verde-claro" />
-            <Row label="Sucesso parcial" value={test.partialSuccess} tone="text-route-amarelo" />
-            <Row label="Falha" value={test.failure} tone="text-route-vermelho" />
-            <Row label="Falha crítica" value={test.criticalFailure} tone="text-destructive" />
-            <Row label="Falha segura (contingência)" value={test.fallback} tone="text-route-cinza" />
+          <div className="rounded-sm border border-route-preto/50 bg-black/25 p-3">
+            <p className="stamp text-route-cinza">PARA O MESTRE — NÃO LER AUTOMATICAMENTE</p>
+            <div className="mt-2 space-y-2">
+              <Row label="Sucesso" value={test.success} tone="text-route-verde-claro" />
+              <Row label="Sucesso parcial" value={test.partialSuccess} tone="text-route-amarelo" />
+              <Row label="Falha" value={test.failure} tone="text-route-vermelho" />
+              <Row label="Falha crítica" value={test.criticalFailure} tone="text-destructive" />
+              <Row label="Falha segura / contingência" value={test.fallback} tone="text-route-cinza" />
+            </div>
           </div>
           <div className="flex flex-wrap gap-2 pt-2">{RESULTS.map((r) => <Button key={r} size="sm" variant={r.startsWith("FALHA") ? "destructive" : "default"} onClick={() => resolve(r)}>{r}</Button>)}</div>
-          {feito && <div className="rounded-sm border border-primary/60 bg-primary/10 p-3"><p className="stamp text-primary">Narrar resultado — {feito}</p><p className="mt-1 font-display text-base leading-relaxed">{narrationFor(feito)}</p></div>}
+          {feito && <div className="rounded-sm border border-primary/60 bg-primary/10 p-3"><p className="stamp text-primary">NARRAR RESULTADO — {feito}</p><p className="mt-1 font-display text-base leading-relaxed">{narrationFor(feito)}</p><p className="mt-3 border-t border-primary/20 pt-2 text-xs text-muted-foreground"><b>Efeito para o mestre:</b> {detailFor(feito)}</p></div>}
         </div>
       </DialogContent>
     </Dialog>
