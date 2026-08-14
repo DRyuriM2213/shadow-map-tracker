@@ -1,9 +1,9 @@
 /**
  * CONFIGURAÇÃO DO MAPA INTERATIVO
  * -------------------------------------------------------------
- * As quatro imagens canônicas devem ficar em `public/mapa/`.
- * Coordenadas permanecem nulas enquanto a imagem não estiver no repositório:
- * assim nenhuma posição de sala é inventada.
+ * As quatro imagens canônicas ficam em `public/mapa/`.
+ * Coordenadas permanecem nulas até o mestre posicionar hotspots visualmente:
+ * nenhuma sala recebe posição inventada.
  */
 
 export type FloorId = "primeiro" | "superior";
@@ -12,9 +12,7 @@ export interface MapHotspot {
   id: string;
   name: string;
   floor: FloorId;
-  /** id do local canônico em campaignFull */
   locationId?: string;
-  /** posição em % da imagem; null = ainda não posicionado */
   x: number | null;
   y: number | null;
   w: number;
@@ -25,31 +23,21 @@ export interface MapHotspot {
 
 export const MAP_IMAGES: Record<FloorId, { limpo: string; numerado: string; label: string }> = {
   primeiro: {
-    label: "Primeiro andar",
-    limpo: "/mapa/primeiro-andar-limpo.png",
-    numerado: "/mapa/primeiro-andar-numerado.png",
+    label: "Térreo",
+    limpo: "/mapa/terreo-limpo.webp",
+    numerado: "/mapa/terreo-investigacao.webp",
   },
   superior: {
     label: "Andar superior",
-    limpo: "/mapa/andar-superior-limpo.png",
-    numerado: "/mapa/andar-superior-numerado.png",
+    limpo: "/mapa/primeiro-andar-limpo.webp",
+    numerado: "/mapa/primeiro-andar-investigacao.webp",
   },
 };
 
-const hs = (
-  id: string,
-  name: string,
-  floor: FloorId,
-  extra: Partial<MapHotspot> = {},
-): MapHotspot => ({ id, name, floor, x: null, y: null, w: 10, h: 8, ...extra });
+const hs = (id: string, name: string, floor: FloorId, extra: Partial<MapHotspot> = {}): MapHotspot => ({ id, name, floor, x: null, y: null, w: 10, h: 8, ...extra });
 
-/**
- * Os nomes abaixo seguem exatamente a legenda escolhida pelo mestre.
- * A ligação com locationId funciona mesmo sem coordenada visual: o cômodo
- * continua acessível pela lista/inspector até as PNGs entrarem no repo.
- */
 export const HOTSPOTS: MapHotspot[] = [
-  // ---------------- PRIMEIRO ANDAR ----------------
+  // TÉRREO — legenda canônica 1–9
   hs("h-saida-principal", "Saída Principal", "primeiro", { locationId: "l-saida-principal" }),
   hs("h-recepcao", "Recepção", "primeiro", { locationId: "l-recepcao" }),
   hs("h-patio-central", "Pátio Central", "primeiro", { locationId: "l-patio" }),
@@ -60,7 +48,7 @@ export const HOTSPOTS: MapHotspot[] = [
   hs("h-vestiarios", "Vestiários M/F", "primeiro", { locationId: "l-vestiarios" }),
   hs("h-escadas", "Escadas para o andar superior", "primeiro", { locationId: "l-escadas" }),
 
-  // ---------------- ANDAR SUPERIOR ----------------
+  // ANDAR SUPERIOR — legenda canônica 1–9 + 3A
   hs("h-secretaria", "Secretaria", "superior", { locationId: "l-secretaria" }),
   hs("h-conselho", "Sala do Conselho Estudantil", "superior", { locationId: "l-conselho" }),
   hs("h-biblioteca", "Biblioteca", "superior", { locationId: "l-biblioteca" }),
