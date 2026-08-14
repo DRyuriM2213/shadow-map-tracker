@@ -18,61 +18,22 @@ export function ClockControls({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => setNovo(session.time), [session.time]);
 
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs">
-      <Button size="sm" variant={session.clockRunning ? "destructive" : "default"} onClick={toggleClock}>
-        {session.clockRunning ? <Pause className="mr-1 size-3.5" /> : <Play className="mr-1 size-3.5" />}
-        {session.clockRunning ? "PAUSAR" : "PLAY"}
-      </Button>
-      <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>{session.clockRunning ? "RODANDO" : "PAUSADO"}</span>
-      <select className="rounded-sm border border-input bg-background px-2 py-1" value={session.clockSpeed} onChange={(e) => setClockSpeed(Number(e.target.value))} aria-label="Velocidade do relógio">
-        {SPEEDS.map((s) => <option key={s} value={s}>{s}x</option>)}
-      </select>
-
-      {!compact && <>
-        {[5, 15, 30, 60].map((m) => <Button key={m} size="sm" variant="outline" onClick={() => advanceTime(m)}>+{m >= 60 ? "1h" : `${m} min`}</Button>)}
-        <Input
-          type="time"
-          className="h-8 w-28"
-          value={novo}
-          onChange={(e) => setNovo(e.target.value)}
-          onBlur={() => /^\d{2}:\d{2}$/.test(novo) && setTime(novo)}
-          aria-label="Horário da campanha"
-        />
-        <Button size="sm" variant="outline" onClick={() => { if (confirm("Avançar o relógio até o próximo evento?")) jumpToNextEvent(); }}>Próximo evento</Button>
-        {session.day === 1 && <Button size="sm" variant="outline" onClick={() => { if (confirm("Executar a transição Dia 1 → evento 03:33 → Dia 2 às 08:00?")) transitionToDay2(); }}>Dia 1 → madrugada → Dia 2</Button>}
-        <label className="flex items-center gap-1 text-[11px] text-muted-foreground"><input type="checkbox" checked={session.autoPauseOnTest} onChange={(e) => setAutoPause(e.target.checked)} />pausar ao abrir teste/pista/NPC</label>
-      </>}
-    </div>
-  );
+  return <div className="flex flex-wrap items-center gap-2 text-xs">
+    <Button size="sm" variant={session.clockRunning ? "destructive" : "default"} onClick={toggleClock}>{session.clockRunning ? <Pause className="mr-1 size-3.5"/> : <Play className="mr-1 size-3.5"/>}{session.clockRunning ? "PAUSAR" : "PLAY"}</Button>
+    <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>{session.clockRunning ? "RODANDO" : "PAUSADO"}</span>
+    <select className="rounded-sm border border-input bg-background px-2 py-1" value={session.clockSpeed} onChange={(e)=>setClockSpeed(Number(e.target.value))} aria-label="Velocidade do relógio">{SPEEDS.map((s)=><option key={s} value={s}>{s}x</option>)}</select>
+    {!compact&&<>{[5,15,30,60].map((m)=><Button key={m} size="sm" variant="outline" onClick={()=>advanceTime(m)}>+{m>=60?"1h":`${m} min`}</Button>)}<Input type="time" className="h-8 w-28" value={novo} onChange={(e)=>setNovo(e.target.value)} onBlur={()=>/^\d{2}:\d{2}$/.test(novo)&&setTime(novo)} aria-label="Horário da campanha"/><Button size="sm" variant="outline" onClick={()=>{if(confirm("Avançar o relógio até o próximo evento?"))jumpToNextEvent();}}>Próximo evento</Button>{session.day===1&&<Button size="sm" variant="outline" onClick={()=>{if(confirm("Executar a transição Dia 1 → evento 03:33 → Dia 2 às 08:00?"))transitionToDay2();}}>Dia 1 → madrugada → Dia 2</Button>}<label className="flex items-center gap-1 text-[11px] text-muted-foreground"><input type="checkbox" checked={session.autoPauseOnTest} onChange={(e)=>setAutoPause(e.target.checked)}/>pausar ao abrir teste/pista/NPC</label></>}
+  </div>;
 }
 
-/** Alerta persistente: vermelho quando devido/atrasado, amarelo nos 15 min anteriores. */
+/** O store atual não implementa snooze real de eventos; por segurança, o alerta só oferece registrar/abrir. */
 export function EventAlert({ onOpen }: { onOpen?: () => void }) {
   const { agora, atrasados, proximo, countdown } = useTimelineStatus();
   const activateEvent = useCampaign((s) => s.activateEvent);
-
   if (agora) {
-    const atrasado = atrasados.some((e) => e.id === agora.id);
-    return (
-      <div className="flex flex-wrap items-center gap-3 rounded-sm border border-destructive bg-destructive/15 px-3 py-2 sm:px-4">
-        <span className="stamp text-destructive"><AlertTriangle className="mr-1 inline size-4" />{atrasado ? "EVENTO ATRASADO" : "EVENTO AGORA"} — {agora.time}</span>
-        <span className="text-sm font-semibold">{agora.title}</span>
-        <span className="min-w-[220px] flex-1 text-xs text-muted-foreground">{agora.description}</span>
-        <div className="ml-auto flex gap-2"><Button size="sm" onClick={() => (onOpen ? onOpen() : activateEvent(agora.id, "ativar"))}>Abrir evento</Button><Button size="sm" variant="ghost" onClick={() => activateEvent(agora.id, "adiar")}>Adiar</Button></div>
-      </div>
-    );
+    const atrasado=atrasados.some((e)=>e.id===agora.id);
+    return <div className="flex flex-wrap items-center gap-3 rounded-sm border border-destructive bg-destructive/15 px-3 py-2 sm:px-4"><span className="stamp text-destructive"><AlertTriangle className="mr-1 inline size-4"/>{atrasado?"EVENTO ATRASADO":"EVENTO AGORA"} — {agora.time}</span><span className="text-sm font-semibold">{agora.title}</span><span className="min-w-[220px] flex-1 text-xs text-muted-foreground">{agora.description}</span><Button size="sm" className="ml-auto" onClick={()=>onOpen?onOpen():activateEvent(agora.id,"ativar")}>Registrar / abrir evento</Button></div>;
   }
-
-  if (proximo && countdown !== null && countdown >= 0 && countdown <= 15) {
-    return (
-      <div className="flex flex-wrap items-center gap-3 rounded-sm border border-route-amarelo/70 bg-route-amarelo/10 px-3 py-2 sm:px-4">
-        <span className="stamp text-route-amarelo"><Clock3 className="mr-1 inline size-4" />EVENTO EM {countdown} MIN — {proximo.time}</span>
-        <span className="text-sm font-semibold">{proximo.title}</span>
-        <span className="min-w-[220px] flex-1 text-xs text-muted-foreground">Prepare a transição; o relógio ainda pode continuar rodando.</span>
-      </div>
-    );
-  }
-
+  if(proximo&&countdown!==null&&countdown>=0&&countdown<=15)return <div className="flex flex-wrap items-center gap-3 rounded-sm border border-route-amarelo/70 bg-route-amarelo/10 px-3 py-2 sm:px-4"><span className="stamp text-route-amarelo"><Clock3 className="mr-1 inline size-4"/>EVENTO EM {countdown} MIN — {proximo.time}</span><span className="text-sm font-semibold">{proximo.title}</span><span className="min-w-[220px] flex-1 text-xs text-muted-foreground">Prepare a transição; o relógio ainda pode continuar rodando.</span></div>;
   return null;
 }
