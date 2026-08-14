@@ -1,7 +1,29 @@
+/**
+ * ELENCO OFICIAL DE NPCs MODELADOS — 16 personagens.
+ *
+ * REGRAS DE CÂNONE APLICADAS AQUI:
+ * - Estes são os ÚNICOS NPCs principais/modelados do RPG.
+ * - Nomes administrativos que aparecem nos documentos (Cecília, Renato, Samuel,
+ *   João, Helena Prado, Larissa, Mariana…) continuam existindo NO TEXTO dos
+ *   documentos/props, mas NÃO são NPCs modelados e não entram nesta lista.
+ * - Nada de biografia inventada: campos sem dado seguro ficam com
+ *   NAO_DEFINIDO e devem ser preenchidos pelo mestre na mesa.
+ * - Augusto é personagem de jogador (Guilherme) e nunca é NPC.
+ * - Alice não existe como NPC.
+ * - A vítima histórica é sempre "Sofia Mendes" (nunca só "Sofia", que é a
+ *   personagem da jogadora Luiz).
+ */
+
+export const NAO_DEFINIDO = "não definido pelo mestre";
+
+export type NpcStatus = "vivo" | "morto" | "desconhecido";
+
 export interface NpcTopic {
   id: string;
   label: string;
+  /** fala pronta, primeira pessoa, curta */
   says: string;
+  /** verdade / omissão / limite — nunca ler em voz alta */
   master: string;
   test?: string;
   dc?: number;
@@ -11,259 +33,307 @@ export interface NpcTopic {
 export interface NpcDef {
   id: string;
   name: string;
+  /** função, cargo ou origem conhecida */
   role: string;
+  status: NpcStatus;
+  /** salas prováveis (ids canônicos); vazio = local não definido */
   locationIds: string[];
   schedule: string;
   personality: string[];
   voice: string;
   knows: string[];
   doesNotKnow: string[];
+  /** somente mestre */
+  secrets: string[];
+  relations: string[];
   initialAttitude: string;
+  masterNotes: string;
   topics: NpcTopic[];
 }
 
+const base = (
+  id: string,
+  name: string,
+  role: string,
+  extra: Partial<NpcDef> = {},
+): NpcDef => ({
+  id,
+  name,
+  role,
+  status: "vivo",
+  locationIds: [],
+  schedule: NAO_DEFINIDO,
+  personality: [],
+  voice: NAO_DEFINIDO,
+  knows: [],
+  doesNotKnow: [],
+  secrets: [],
+  relations: [],
+  initialAttitude: NAO_DEFINIDO,
+  masterNotes: "",
+  topics: [],
+  ...extra,
+});
+
 export const NPCS: NpcDef[] = [
-  {
-    id: "cecilia",
-    name: "Cecília Azevedo",
-    role: "Bibliotecária / Arquivo Institucional",
-    locationIds: ["l-biblioteca", "l-arquivo-morto"],
-    schedule: "Biblioteca 08h–17h. Em 17/08, agenda prevê Arquivo às 15h10.",
-    personality: ["metódica", "observadora", "protetora do acervo"],
-    voice: "Fala baixa e precisa; prefere datas, códigos e fatos verificáveis.",
-    knows: ["Ricardo consultou quatro caixas em 2018.", "OBR-17/18-A voltou à estante errada.", "Quatro caixas têm divergências."],
-    doesNotKnow: ["Não conhece o propósito real do Bloco C."],
-    initialAttitude: "Prestativa em assunto acadêmico; cautelosa com Diretoria e retiradas irregulares.",
+  base("arthur", "Arthur", "Filho de Guilherme (origem informada pelo mestre)", {
+    status: "morto",
+    relations: ["Filho de Guilherme."],
+    masterNotes:
+      "Status: morto. Nenhuma outra informação está fixada no cânone do projeto — usar apenas o que o mestre decidir na mesa. Não confundir com Augusto, que é o personagem jogado por Guilherme.",
+    initialAttitude: "Não interage: personagem morto. Aparece por memória, registro ou menção.",
+  }),
+
+  base("marie-barbosa", "Marie Barbosa", "Professora de Artes", {
+    locationIds: ["l-auditorio", "l-bastidores", "l-patio"],
+    personality: ["atenta", "prática"],
+    voice: "Fala de forma direta sobre o que viu e montou; evita especular sobre a instituição.",
+    knows: ["Uso do auditório para eventos e ensaios."],
+    doesNotKnow: ["Não tem acesso administrativo nem conhecimento técnico da estrutura de iluminação."],
+    initialAttitude: "Colaborativa em assuntos de auditório, montagem e eventos.",
+    masterNotes:
+      "Referência presencial para auditório/eventos. Não atribuir a ela conteúdo de relatório técnico assinado por funcionário documental — isso continua no documento.",
+    topics: [
+      {
+        id: "auditorio",
+        label: "Auditório / evento",
+        says: "O auditório estava liberado para o evento e a montagem já estava pronta antes de todo mundo chegar. Eu não fui quem instalou a parte de iluminação, isso é da equipe técnica.",
+        master:
+          "Verdade operacional segura. Ela não confirma sabotagem nem causa do acidente. O laudo técnico continua sendo o documento, não a fala dela.",
+      },
+      {
+        id: "acidente",
+        label: "O acidente",
+        says: "Foi rápido demais. Eu ouvi o estalo antes de ver qualquer coisa cair. Não sei dizer o que soltou.",
+        master: "Não entregar causa. Causa só sai de exame físico do cabo ou do relatório técnico.",
+        test: "Diplomacia",
+        dc: 10,
+      },
+    ],
+  }),
+
+  base("jade-nogueira", "Jade Nogueira", `Família Nogueira — ${NAO_DEFINIDO}`, {
+    relations: ["Ligação familiar com o nome Nogueira (Ricardo Nogueira aparece nos registros do arquivo)."],
+    initialAttitude: "Reservada quando o assunto é a família.",
+    masterNotes:
+      "Pode ser ponto de conversa sobre Ricardo Nogueira e família. Não inventar parentesco exato, culpa ou segredo: se o mestre não definir, manter em aberto.",
     topics: [
       {
         id: "ricardo",
         label: "Ricardo Nogueira",
-        says: "Ricardo? Sim. Ele veio como visitante e ficou horas no arquivo. Consultou obras, drenagem, segurança e autorizações da Diretoria no mesmo dia. Foi uma pesquisa bem específica.",
-        master: "Sustentado pela ficha de consulta de 27/11/2018. Pode indicar DIR-18-R.",
-        test: "Diplomacia / Investigação",
-        dc: 10,
-        unlocks: ["FICHA DE CONSULTA AO ARQUIVO INSTITUCIONAL"],
+        says: "Esse nome ainda pesa aqui em casa. Se vocês querem falar sobre ele, falem direito, não por curiosidade.",
+        master:
+          "Grau de parentesco e detalhes não estão definidos no cânone do projeto. O que existe documentado é a consulta dele ao arquivo institucional em 2018.",
       },
+    ],
+  }),
+
+  base("vitor-hugo-nogueira", "Vitor Hugo Nogueira", `Família Nogueira — ${NAO_DEFINIDO}`, {
+    relations: ["Ligação familiar com o nome Nogueira."],
+    initialAttitude: "Desconfiado com perguntas sobre a família.",
+    masterNotes: "Mesmo tratamento de Jade: parentesco e segredos ficam em aberto até o mestre definir.",
+    topics: [
       {
-        id: "obr",
-        label: "Caixa OBR-17/18-A",
-        says: "Essa caixa está me incomodando. Voltou para a estante errada e duas folhas não batem com o restante. Eu ia conferir o lacre ainda hoje.",
-        master: "Verdade registrada na agenda e no relatório de reorganização.",
-        unlocks: ["AGENDA DE SERVIÇO", "RELATÓRIO DE REORGANIZAÇÃO DO ARQUIVO INSTITUCIONAL"],
-      },
-      {
-        id: "bloco-c",
-        label: "Bloco C",
-        says: "Bloco C? Nesse nome, não. Se isso aparece em documento antigo, eu precisaria ver a referência antes de afirmar qualquer coisa.",
-        master: "Não entregar conhecimento que os documentos ainda não sustentam.",
+        id: "familia",
+        label: "Família / Ricardo",
+        says: "A gente já respondeu isso muitas vezes. O que exatamente vocês encontraram para vir perguntar de novo?",
+        master: "Reage ao que o grupo mostrar. Sem documento na mão, não entrega nada novo.",
         test: "Diplomacia",
         dc: 15,
       },
     ],
-  },
-  {
-    id: "mariana",
-    name: "Mariana Costa",
-    role: "Secretária Acadêmica",
-    locationIds: ["l-secretaria", "l-administracao"],
-    schedule: "Secretaria durante o expediente regular.",
-    personality: ["procedimental", "cuidadosa", "institucional"],
-    voice: "Responde em linguagem administrativa e evita especular.",
-    knows: ["Há atendimentos extraordinários.", "A pasta de trancamentos 2023–2026 sumiu.", "A Diretoria controla registros extraordinários."],
-    doesNotKnow: ["Não conhece a finalidade real das convocações."],
-    initialAttitude: "Normal até perceber que o grupo está cruzando casos antigos.",
+  }),
+
+  base("cicero-ferreira", "Cícero Ferreira", "Professor de História", {
+    locationIds: ["l-salas-aula", "l-biblioteca", "l-professores"],
+    personality: ["didático", "detalhista"],
+    voice: "Contextualiza tudo historicamente antes de responder.",
+    knows: ["Como consultar acervo e material histórico da universidade."],
+    initialAttitude: "Cooperativo com pesquisa acadêmica.",
+    masterNotes: "Ponto de entrada para assuntos de História/arquivo sem substituir a bibliotecária documental.",
     topics: [
       {
-        id: "22h",
-        label: "Convocações às 22h",
-        says: "Existem atendimentos extraordinários, sim. Eles são individuais e precisam ser confirmados com o setor responsável. A Secretaria não divulga lista pública.",
-        master: "Não implica conhecimento da finalidade real.",
-        unlocks: ["MEMORANDO INTERNO Nº 014/2023", "REGISTRO DE CORRESPONDÊNCIAS AUTOMATIZADAS"],
-      },
-      {
-        id: "trancamentos",
-        label: "Trancamentos",
-        says: "No sistema, as alterações constam como trancamentos voluntários. Os anexos dessas solicitações não aparecem no cadastro atual.",
-        master: "Com o documento 01, pode confirmar homologação em lote por UV-ADMIN-01.",
-        test: "Diplomacia / Investigação",
-        dc: 15,
-        unlocks: ["RELATÓRIO CONSOLIDADO DE ALTERAÇÕES DE SITUAÇÃO ACADÊMICA"],
-      },
-    ],
-  },
-  {
-    id: "renato",
-    name: "Prof. Renato Moura",
-    role: "Coordenador do Laboratório de Química",
-    locationIds: ["l-lab-quimica"],
-    schedule: "Segunda 08h–17h; terça 13h–18h.",
-    personality: ["técnico", "franco", "irritado com burocracia"],
-    voice: "Fala direto e usa quantidade, horário e procedimento como argumento.",
-    knows: ["Faltam 42 L no estoque.", "Parte do lote saiu antes da conferência.", "A investigação interna foi indeferida."],
-    doesNotKnow: ["Não sabe o destino real do material."],
-    initialAttitude: "Coopera quando percebem a irregularidade como problema real.",
-    topics: [
-      {
-        id: "42l",
-        label: "42 litros ausentes",
-        says: "O estoque não fecha. São quarenta e dois litros de diferença e não existe aula, pesquisa ou descarte que explique isso. Eu mandei o relatório para a Diretoria e a investigação foi indeferida.",
-        master: "Sustentado pelos documentos 17 e 19.",
-        unlocks: ["CONTROLE CONSOLIDADO DE REAGENTES", "LIVRO DE OCORRÊNCIAS DO LABORATÓRIO"],
-      },
-      {
-        id: "madrugada",
-        label: "Acesso de madrugada",
-        says: "Eu não reservei o laboratório naquela madrugada. O sensor registrou abertura às 02h37. Para saber quem entrou, precisam do log eletrônico ou do cadastro mestre.",
-        master: "Direciona ao documento 22 sem inventar o titular de UV-ADMIN-01.",
-        unlocks: ["REGISTRO ELETRÔNICO DE ACESSOS"],
-      },
-    ],
-  },
-  {
-    id: "samuel",
-    name: "Samuel Nunes",
-    role: "Infraestrutura / Tecnologia",
-    locationIds: ["l-auditorio", "l-bastidores", "l-seguranca", "l-administracao"],
-    schedule: "Segunda TI 08h–12h; terça palestra 10h30 e laboratório 14h–18h.",
-    personality: ["analítico", "prático", "objetivo"],
-    voice: "Usa linguagem técnica e traduz quando percebe que estão acompanhando.",
-    knows: ["A manutenção criou exceção para credencial administrativa.", "O relatório do auditório aponta intervenção física."],
-    doesNotKnow: ["Não conhece o propósito do Bloco C."],
-    initialAttitude: "Neutro; melhora com evidência técnica.",
-    topics: [
-      {
-        id: "refletor",
-        label: "Refletor / cabo",
-        says: "Se um cabo rompe por fadiga, a borda não fica daquele jeito. E a trava secundária estava aberta sem deformação. Tecnicamente, eu não chamaria isso de desgaste natural.",
-        master: "Conteúdo técnico do documento 34. A hora impressa conflita com a timeline; não use o horário como prova até o mestre decidir.",
-        unlocks: ["RELATÓRIO TÉCNICO DE MANUTENÇÃO DO AUDITÓRIO"],
-      },
-      {
-        id: "catracas",
-        label: "Manutenção das catracas",
-        says: "A ordem de serviço mudou a lógica de acesso. Os bloqueios passaram a sincronizar com o sistema acadêmico e a credencial administrativa ganhou uma exceção própria.",
-        master: "Baseado no documento 27.",
-        unlocks: ["ORDEM DE SERVIÇO — MANUTENÇÃO DE CATRACAS"],
-      },
-    ],
-  },
-  {
-    id: "joao",
-    name: "João Batista",
-    role: "Segurança Patrimonial",
-    locationIds: ["l-seguranca", "l-corredores"],
-    schedule: "Ronda documentada de 16→17/08: 22h–06h.",
-    personality: ["atento", "objetivo", "cauteloso"],
-    voice: "Fala em horário e localização, como quem preenche ocorrência.",
-    knows: ["Viu uma pessoa no corredor sul às 02h38.", "Registrou alarme às 03h06 e odor metálico às 01h12."],
-    doesNotKnow: ["Não confirmou a identidade da pessoa."],
-    initialAttitude: "Coopera se pedirem confirmação, não um culpado pronto.",
-    topics: [
-      {
-        id: "ronda",
-        label: "Ronda noturna",
-        says: "Às 02h38 eu vi uma pessoa cruzar o corredor sul, mas não consegui confirmar quem era. Às 03h06 a saída de serviço disparou por dezenove segundos. Isso está no relatório.",
-        master: "Não dar identidade; o próprio documento diz que não foi confirmada.",
-        unlocks: ["RELATÓRIO DE RONDA NOTURNA"],
-      },
-    ],
-  },
-  {
-    id: "helena-prado",
-    name: "Helena Prado",
-    role: "Atendimento / Identificação / Achados e Perdidos",
-    locationIds: ["l-recepcao", "l-secretaria"],
-    schedule: "Atendimento em horário comercial; aparece nos registros de identificação e Achados e Perdidos.",
-    personality: ["cordial", "organizada", "atenta a protocolo"],
-    voice: "Fala de forma simples e prática; costuma explicar o procedimento antes de opinar.",
-    knows: ["Como funciona uma segunda via normal de credencial.", "Há retiradas e transferências antigas de objetos sem termo de entrega anexado."],
-    doesNotKnow: ["Não sabe por que a Diretoria retirou determinados objetos nem o destino final deles."],
-    initialAttitude: "Prestativa com consulta de rotina; cautelosa se pedirem retirada de objeto sem registro.",
-    topics: [
-      {
-        id: "segunda-via",
-        label: "Segunda via de crachá",
-        says: "Quando alguém perde a credencial, a via anterior é bloqueada, a identidade é conferida e a retirada da nova fica registrada. É um procedimento bem simples e deixa rastro.",
-        master: "Serve como comparação com os bloqueios anormais dos desaparecidos. Baseado no documento 25.",
-        unlocks: ["SOLICITAÇÃO DE SEGUNDA VIA DE CREDENCIAL"],
-      },
-      {
-        id: "achados",
-        label: "Achados e Perdidos",
-        says: "Tem alguns registros antigos que não fecham direito. Objetos foram transferidos ou retirados sem termo de entrega anexado. Eu consigo mostrar o inventário, mas não sei dizer por que fizeram assim.",
-        master: "Baseado no documento 40. O papel físico contém uma referência antiga a Alice; não repetir esse nome automaticamente nem cadastrar Alice como NPC.",
-        test: "Diplomacia / Investigação",
+        id: "arquivo",
+        label: "Arquivo / registros antigos",
+        says: "Registro antigo aqui é um problema conhecido: parte foi reorganizada, parte foi transferida. Se procuram um período específico, comecem pela caixa correspondente e conferem a numeração.",
+        master: "Orienta o caminho, não entrega o achado. As divergências continuam vindo dos documentos.",
+        test: "Investigação",
         dc: 10,
-        unlocks: ["INVENTÁRIO DE ACHADOS E PERDIDOS"],
       },
     ],
-  },
-  {
-    id: "larissa-duarte",
-    name: "Larissa Duarte",
-    role: "Técnica de Laboratório",
+  }),
+
+  base("suzanne-de-lima", "Suzanne de Lima", "Estudante — curso de História", {
+    locationIds: ["l-biblioteca", "l-salas-aula", "l-patio"],
+    initialAttitude: "Curiosa, disposta a ajudar quem parece estar pesquisando de verdade.",
+    masterNotes: "Pode dar apoio de pesquisa e boatos de corredor. Não inventar testemunho de crime.",
+    topics: [
+      {
+        id: "boatos",
+        label: "O que se comenta no campus",
+        says: "Sempre corre alguma história aqui. Nem tudo é verdade, mas tem coisa que muita gente repete e ninguém confirma.",
+        master: "Boato não é prova. Não transformar em confirmação de sabotagem ou culpado.",
+      },
+    ],
+  }),
+
+  base("rafael-goncalves", "Rafael Gonçalves", "Professor de Química", {
     locationIds: ["l-lab-quimica"],
-    schedule: "Rotina do Laboratório de Química; o log registra tentativa de acesso negada em 17/08 às 00h12 e 00h13.",
-    personality: ["cuidadosa", "prática", "precisa com inventário"],
-    voice: "Fala em quantidade, patrimônio e localização; evita afirmar o que não consegue provar.",
-    knows: ["Quatro recipientes de contenção e uma bomba de transferência estão ausentes.", "A retirada aparece como administrativa, sem setor de destino."],
-    doesNotKnow: ["Não sabe onde o material foi parar nem quem o transportou fisicamente."],
-    initialAttitude: "Cooperativa em assunto técnico; fica mais cautelosa quando a conversa vira credencial administrativa.",
+    personality: ["técnico", "direto"],
+    voice: "Fala em quantidade, procedimento e horário.",
+    knows: ["Rotina, controle de estoque e procedimento do laboratório."],
+    doesNotKnow: ["Não sabe o destino final de material que saiu fora do procedimento."],
+    initialAttitude: "Coopera quando a irregularidade é tratada como problema técnico real.",
+    masterNotes:
+      "Referência PRESENCIAL de Química. O conteúdo assinado nos relatórios/livros de ocorrência continua sendo do documento; ele confirma procedimento, não autoria.",
     topics: [
       {
-        id: "inventario",
-        label: "Materiais ausentes",
-        says: "Na conferência faltavam quatro recipientes de contenção e uma bomba de transferência. A retirada aparece como administrativa, mas não tem setor de destino nem previsão de devolução.",
-        master: "Baseado no documento 20. Não atribuir autoria além da autorização administrativa registrada.",
-        unlocks: ["INVENTÁRIO FÍSICO DE MATERIAIS"],
+        id: "estoque",
+        label: "Estoque de reagentes",
+        says: "O controle é simples: entrada, saída e conferência. Quando não fecha, alguém tirou fora do procedimento. Eu registro e mando para cima.",
+        master: "Sustentado pelo controle de reagentes. Não nomear responsável.",
       },
       {
-        id: "credencial",
-        label: "Acesso noturno",
-        says: "Meu acesso foi negado naquela madrugada. O que eu sei é isso. Se outra credencial entrou, o controlador de portas vai mostrar; eu não consigo dizer quem estava usando ela.",
-        master: "Mantém a identidade em aberto e direciona ao documento 22.",
-        unlocks: ["REGISTRO ELETRÔNICO DE ACESSOS"],
+        id: "acesso",
+        label: "Acesso fora de horário",
+        says: "Laboratório fora de horário precisa de reserva. Se abriu sem reserva, isso aparece no log eletrônico, não em mim.",
+        master: "Direciona ao registro eletrônico de acessos sem inventar o titular da credencial.",
       },
     ],
-  },
-  {
-    id: "marie-barbosa",
-    name: "Marie Barbosa",
-    role: "Docente de Artes / Coordenação de eventos",
-    locationIds: ["l-auditorio", "l-bastidores", "l-salas-aula"],
-    schedule: "Segunda: Ateliê 08h–11h e Auditório 14h–17h. Terça: Ateliê 13h–17h, conforme quadro docente.",
-    personality: ["expressiva", "organizada", "protetora da equipe"],
-    voice: "Fala rápido quando está trabalhando e lembra pessoas pelo que estavam fazendo no evento.",
-    knows: ["Rotina de montagem do auditório.", "Quem deveria estar envolvido na organização de eventos e em quais funções."],
-    doesNotKnow: ["Não possui conhecimento definido sobre Bloco C nem sobre a autoria do acidente."],
-    initialAttitude: "Prestativa sobre horários, escala e evento; defensiva se alguém acusar a equipe sem evidência.",
+  }),
+
+  base("jairo-andrade", "Jairo Andrade", "Professor de Matemática", {
+    locationIds: ["l-salas-aula", "l-professores"],
+    initialAttitude: "Formal, responde ao que foi perguntado.",
+    masterNotes: "Testemunha de rotina de aulas e horários. Sem segredo definido.",
     topics: [
       {
-        id: "montagem",
-        label: "Montagem do auditório",
-        says: "A montagem tem rotina. Som, luz, chave e equipamento passam por gente específica. Se alguém mexeu em alguma coisa fora do combinado, dá para comparar a escala com quem realmente estava aqui.",
-        master: "Ela pode orientar a procurar programação, escala, chaves e credenciamento, sem apontar culpado.",
-        unlocks: ["PROGRAMAÇÃO OFICIAL DO AUDITÓRIO", "REGISTRO DE EMPRÉSTIMO DE CHAVES"],
+        id: "horarios",
+        label: "Horários e presença",
+        says: "Eu sigo o horário publicado. Se alguém faltou ou saiu no meio, isso normalmente aparece na chamada.",
+        master: "Serve para cruzar horários; não inventar ausência específica sem o mestre decidir.",
+      },
+    ],
+  }),
+
+  base("pimentinha", "Pimentinha", NAO_DEFINIDO, {
+    initialAttitude: NAO_DEFINIDO,
+    masterNotes:
+      "Nenhuma função ou origem informada no cânone. Deixar em aberto e preencher na mesa. Apelido é o nome usado no jogo.",
+  }),
+
+  base("giovan-cesaire", "Giovan Cesairé", "Clube de História", {
+    locationIds: ["l-biblioteca", "l-conselho", "l-salas-aula"],
+    initialAttitude: "Entusiasmado com qualquer investigação histórica.",
+    masterNotes: "Ponto de conversa ligado ao Clube de História e ao arquivo, quando fizer sentido.",
+    topics: [
+      {
+        id: "clube",
+        label: "Clube de História",
+        says: "A gente já levantou material antigo do campus. Se me disserem o ano, eu sei mais ou menos onde procurar.",
+        master: "Ajuda de pesquisa. Nunca entrega conclusão pronta.",
+      },
+    ],
+  }),
+
+  base("elisa-pereira", "Elisa Pereira", "Professora de Português", {
+    locationIds: ["l-salas-aula", "l-professores"],
+    initialAttitude: "Atenciosa, cuidadosa com o que afirma.",
+    masterNotes: "Sem segredo definido. Boa para leitura/interpretação de documento junto dos jogadores.",
+    topics: [
+      {
+        id: "documento",
+        label: "Ler um documento com ela",
+        says: "Me mostra o texto. Muita coisa se resolve reparando em como foi escrito, não só no que está escrito.",
+        master: "Pode conceder vantagem narrativa em interpretação de documento, a critério do mestre.",
+        test: "Investigação / Ofício",
+        dc: 10,
+      },
+    ],
+  }),
+
+  base("marcos-de-souza", "Marcos de Souza", "Zelador", {
+    locationIds: ["l-corredores", "l-patio", "l-escadas", "l-banheiros-primeiro"],
+    personality: ["observador", "discreto"],
+    voice: "Fala pouco, em frases curtas, e nota o que está fora do lugar.",
+    knows: ["Rotina de limpeza, manutenção e circulação por corredores."],
+    initialAttitude: "Reservado; abre quando tratado com respeito.",
+    masterNotes:
+      "Cobre zeladoria/manutenção/corredores. Não atribuir a ele relatórios técnicos assinados por outro funcionário documental.",
+    topics: [
+      {
+        id: "corredores",
+        label: "Movimento nos corredores",
+        says: "Eu passo por tudo aqui todo dia. Quando alguma coisa muda de lugar, eu percebo. Mas percebi não é o mesmo que vi quem fez.",
+        master: "Pode confirmar anomalia física sem apontar autor.",
       },
       {
-        id: "equipe",
-        label: "Equipe / voluntários",
-        says: "Eu consigo dizer quem deveria estar na organização e em qual função. Para evento grande, voluntário e equipamento têm horário registrado — pelo menos deveriam ter.",
-        master: "Pode direcionar ao documento 31 e aos registros de evento. O prop 31 contém nomes antigos; isso não transforma Thaissa em NPC.",
-        unlocks: ["EQUIPE DE VOLUNTÁRIOS — MOSTRA DE ARTES E CIÊNCIA"],
-      },
-      {
-        id: "acidente",
-        label: "Acidente do refletor",
-        says: "Eu estava preocupada com o evento, não investigando estrutura. O que eu consigo confirmar é quem estava previsto para trabalhar e o que deveria estar fechado ou sob controle.",
-        master: "Não inventar que Marie viu a sabotagem ou um responsável. Use-a como testemunha de rotina e organização.",
+        id: "manutencao",
+        label: "Manutenção / áreas fechadas",
+        says: "Área fechada é fechada. Se estava aberta fora de hora, alguém abriu com chave ou credencial, porque eu não deixo assim.",
+        master: "Reforça a pista de acesso credenciado, sem nomear titular.",
         test: "Diplomacia",
-        dc: 10,
+        dc: 15,
       },
     ],
-  },
+  }),
+
+  base("vick", "Vick (Ana Vitória)", "Estudante de Educação Física", {
+    locationIds: ["l-quadra", "l-vestiarios", "l-patio"],
+    initialAttitude: "Direta e sociável.",
+    masterNotes: "Assuntos de quadra, vestiários e circulação de estudantes.",
+    topics: [
+      {
+        id: "quadra",
+        label: "Quadra e vestiários",
+        says: "A gente treina quase todo dia. Se alguém estranho aparece por ali, chama atenção rápido.",
+        master: "Testemunho de rotina, não de crime.",
+      },
+    ],
+  }),
+
+  base("melina-vieira", "Melina Vieira", NAO_DEFINIDO, {
+    initialAttitude: NAO_DEFINIDO,
+    masterNotes: "Sem função ou origem informada no cânone. Preencher na mesa conforme o uso.",
+  }),
+
+  base("camilla-gomes", "Camilla Gomes", "Professora de Educação Física", {
+    locationIds: ["l-quadra", "l-vestiarios"],
+    initialAttitude: "Objetiva; protege os alunos.",
+    masterNotes: "Responsável presencial por quadra/vestiários e turmas de Educação Física.",
+    topics: [
+      {
+        id: "turmas",
+        label: "Turmas e frequência",
+        says: "Eu sei quem estava na minha aula e quem não estava. O que aconteceu fora dela eu não posso afirmar.",
+        master: "Cruzamento de horários, sem afirmar desaparecimento.",
+      },
+    ],
+  }),
+
+  base("lorenzo-juarez", "Lorenzo Juarez", "Policial / apoio externo", {
+    locationIds: ["l-recepcao", "l-saida-principal"],
+    personality: ["procedimental", "cético"],
+    voice: "Fala em termos de ocorrência, prazo e competência.",
+    initialAttitude: "Neutro; exige fato registrável antes de agir.",
+    masterNotes:
+      "Canal para polícia/segurança externa. Escalar com ele aumenta a atenção da universidade — usar como consequência, não como atalho de solução.",
+    topics: [
+      {
+        id: "ocorrencia",
+        label: "Registrar ocorrência",
+        says: "Posso registrar, mas registro precisa de fato: data, local e o que exatamente vocês têm em mãos. Suspeita sozinha não anda.",
+        master: "Se o grupo escalar sem evidência, considerar aumento de atenção institucional.",
+        test: "Diplomacia",
+        dc: 15,
+      },
+    ],
+  }),
 ];
 
 export function npcsForLocation(locationId?: string) {
-  return locationId ? NPCS.filter((npc) => npc.locationIds.includes(locationId)) : [];
+  if (!locationId) return [];
+  return NPCS.filter((n) => n.status !== "morto" && n.locationIds.includes(locationId));
 }
+
+export const npcById = (id: string) => NPCS.find((n) => n.id === id);
