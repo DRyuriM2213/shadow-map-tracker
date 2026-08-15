@@ -1,18 +1,23 @@
-import { useId, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MAP_IMAGES, type FloorId } from "@/data/map";
 import type { MapRegion, MapReveal, SharedAsset } from "@/lib/playerCloudTypes";
 import { decodeManualRevealLocationId, regionLocationId, revealLocationId, revealTargetId } from "@/lib/playerCloudTypes";
-import { Eye, Map as MapIcon } from "lucide-react";
+import { AlertTriangle, Eye, Map as MapIcon } from "lucide-react";
 
 const clampPercent = (value: number) => Math.max(0, Math.min(100, value));
 
 export function FogMap({ playerId, regions, reveals, assets }: { playerId: string; regions: MapRegion[]; reveals: MapReveal[]; assets: SharedAsset[] }) {
   const [floor, setFloor] = useState<FloorId>("primeiro");
-  const rawMaskId = useId();
-  const maskId = `fog-${rawMaskId.replace(/[^a-zA-Z0-9_-]/g, "")}-${floor}`;
+  const [imageReady, setImageReady] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const asset = (key: string) => assets.find(a => (a.assetKey ?? a.asset_key) === key)?.publicUrl ?? assets.find(a => (a.assetKey ?? a.asset_key) === key)?.public_url;
   const image = asset(`map:${floor}:limpo`) || MAP_IMAGES[floor].limpo;
+
+  useEffect(() => {
+    setImageReady(false);
+    setImageFailed(false);
+  }, [image, floor]);
 
   const visible = useMemo(() => {
     const map = new Map<string, boolean>();
@@ -79,36 +84,60 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
       </div>
     </div>
 
-    <div className="relative overflow-hidden rounded-sm border border-border bg-black shadow-2xl">
-      {/* O mapa fica colorido por baixo. O SVG cobre tudo de preto e abre buracos nas regiões liberadas. */}
+    <div className="relative min-h-[360px] overflow-hidden rounded-sm border border-border bg-black shadow-2xl">
+      {/* Esta imagem invisível define exatamente o tamanho/proporção do mapa. */}
       <img
+        key={`sizer-${floor}-${image}`}
         src={image}
-        alt={`Mapa conhecido — ${MAP_IMAGES[floor].label}`}
-        className="block w-full select-none"
+        alt=""
+        aria-hidden
+        className="block w-full select-none opacity-0"
         draggable={false}
-        onError={(e) => { e.currentTarget.style.minHeight = "420px"; }}
+        onLoad={() => { setImageReady(true); setImageFailed(false); }}
+        onError={() => { setImageReady(false); setImageFailed(true); }}
       />
 
-      <svg
-        className="pointer-events-none absolute inset-0 size-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <defs>
-          <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
-            <rect x="0" y="0" width="100" height="100" fill="white" />
-            {safeRegions.map(region => (
-              <rect key={region.id} x={region.x} y={region.y} width={region.width} height={region.height} fill="black" />
-            ))}
-          </mask>
-        </defs>
-        <rect x="0" y="0" width="100" height="100" fill="#000" mask={`url(#${maskId})`} />
-      </svg>
+      {/*
+        Fog sem SVG/mask/clip-path: cada área é uma janela com overflow hidden.
+        Dentro dela existe uma cópia da planta inteira reposicionada para mostrar
+        exatamente o trecho correspondente às coordenadas percentuais.
+      */}
+      {imageReady && safeRegions.map(region => (
+        <div
+          key={`${floor}-${region.id}`}
+          className="absolute overflow-hidden bg-black ring-1 ring-white/10"
+          style={{
+            left: `${region.x}%`,
+            top: `${region.y}%`,
+            width: `${region.width}%`,
+            height: `${region.height}%`,
+          }}
+        >
+          <img
+            src={image}
+            alt=""
+            aria-hidden
+            draggable={false}
+            className="pointer-events-none absolute max-w-none select-none"
+            style={{
+              width: `${10000 / region.width}%`,
+              height: `${10000 / region.height}%`,
+              left: `${-(region.x / region.width) * 100}%`,
+              top: `${-(region.y / region.height) * 100}%`,
+            }}
+          />
+        </div>
+      ))}
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0,rgba(0,0,0,.08)_76%,rgba(0,0,0,.30)_100%)]" />
+      {imageFailed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-amber-300">
+          <AlertTriangle className="size-10" />
+          <p className="mt-3 font-semibold">A imagem do mapa não carregou neste dispositivo</p>
+          <p className="mt-1 max-w-lg text-xs text-zinc-400">Avise o mestre: o arquivo da planta precisa ser disponibilizado pelo site. Isso não é uma área oculta do fog.</p>
+        </div>
+      )}
 
-      {safeRegions.length === 0 && (
+      {!imageFailed && safeRegions.length === 0 && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-zinc-500">
           <MapIcon className="size-12" />
           <p className="mt-3 font-mono text-sm tracking-widest">SEM ÁREAS LIBERADAS</p>
@@ -120,6 +149,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <Eye className="size-3.5" />
       <span>{safeRegions.length} área(s) visível(is) neste piso.</span>
+      {imageReady && <span className="text-route-verde-claro">· planta carregada</span>}
     </div>
   </section>;
 }
