@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AssetsRouteImport } from './routes/assets'
 import { Route as ConsequenciasRouteImport } from './routes/consequencias'
 import { Route as DiagramaRouteImport } from './routes/diagrama'
 import { Route as EditarRouteImport } from './routes/editar'
@@ -19,6 +20,8 @@ import { Route as NpcsRouteImport } from './routes/npcs'
 import { Route as PersonagensRouteImport } from './routes/personagens'
 import { Route as PistasRouteImport } from './routes/pistas'
 import { Route as PistasV2RouteImport } from './routes/pistas-v2'
+import { Route as PlayerRouteImport } from './routes/player'
+import { Route as PlayersRouteImport } from './routes/players'
 import { Route as ResumoRouteImport } from './routes/resumo'
 import { Route as SessaoRouteImport } from './routes/sessao'
 import { Route as SessaoV2RouteImport } from './routes/sessao-v2'
@@ -27,6 +30,11 @@ import { Route as TimelineRouteImport } from './routes/timeline'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssetsRoute = AssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsequenciasRoute = ConsequenciasRouteImport.update({
@@ -74,6 +82,16 @@ const PistasV2Route = PistasV2RouteImport.update({
   path: '/pistas-v2',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlayerRoute = PlayerRouteImport.update({
+  id: '/player',
+  path: '/player',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayersRoute = PlayersRouteImport.update({
+  id: '/players',
+  path: '/players',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResumoRoute = ResumoRouteImport.update({
   id: '/resumo',
   path: '/resumo',
@@ -97,6 +115,7 @@ const TimelineRoute = TimelineRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assets': typeof AssetsRoute
   '/consequencias': typeof ConsequenciasRoute
   '/diagrama': typeof DiagramaRoute
   '/editar': typeof EditarRoute
@@ -106,6 +125,8 @@ export interface FileRoutesByFullPath {
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
   '/pistas-v2': typeof PistasV2Route
+  '/player': typeof PlayerRoute
+  '/players': typeof PlayersRoute
   '/resumo': typeof ResumoRoute
   '/sessao': typeof SessaoRoute
   '/sessao-v2': typeof SessaoV2Route
@@ -113,6 +134,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assets': typeof AssetsRoute
   '/consequencias': typeof ConsequenciasRoute
   '/diagrama': typeof DiagramaRoute
   '/editar': typeof EditarRoute
@@ -122,6 +144,8 @@ export interface FileRoutesByTo {
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
   '/pistas-v2': typeof PistasV2Route
+  '/player': typeof PlayerRoute
+  '/players': typeof PlayersRoute
   '/resumo': typeof ResumoRoute
   '/sessao': typeof SessaoRoute
   '/sessao-v2': typeof SessaoV2Route
@@ -130,6 +154,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assets': typeof AssetsRoute
   '/consequencias': typeof ConsequenciasRoute
   '/diagrama': typeof DiagramaRoute
   '/editar': typeof EditarRoute
@@ -139,6 +164,8 @@ export interface FileRoutesById {
   '/personagens': typeof PersonagensRoute
   '/pistas': typeof PistasRoute
   '/pistas-v2': typeof PistasV2Route
+  '/player': typeof PlayerRoute
+  '/players': typeof PlayersRoute
   '/resumo': typeof ResumoRoute
   '/sessao': typeof SessaoRoute
   '/sessao-v2': typeof SessaoV2Route
@@ -148,6 +175,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/assets'
     | '/consequencias'
     | '/diagrama'
     | '/editar'
@@ -157,6 +185,8 @@ export interface FileRouteTypes {
     | '/personagens'
     | '/pistas'
     | '/pistas-v2'
+    | '/player'
+    | '/players'
     | '/resumo'
     | '/sessao'
     | '/sessao-v2'
@@ -164,6 +194,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/assets'
     | '/consequencias'
     | '/diagrama'
     | '/editar'
@@ -173,6 +204,8 @@ export interface FileRouteTypes {
     | '/personagens'
     | '/pistas'
     | '/pistas-v2'
+    | '/player'
+    | '/players'
     | '/resumo'
     | '/sessao'
     | '/sessao-v2'
@@ -180,6 +213,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/assets'
     | '/consequencias'
     | '/diagrama'
     | '/editar'
@@ -189,6 +223,8 @@ export interface FileRouteTypes {
     | '/personagens'
     | '/pistas'
     | '/pistas-v2'
+    | '/player'
+    | '/players'
     | '/resumo'
     | '/sessao'
     | '/sessao-v2'
@@ -197,6 +233,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssetsRoute: typeof AssetsRoute
   ConsequenciasRoute: typeof ConsequenciasRoute
   DiagramaRoute: typeof DiagramaRoute
   EditarRoute: typeof EditarRoute
@@ -206,6 +243,8 @@ export interface RootRouteChildren {
   PersonagensRoute: typeof PersonagensRoute
   PistasRoute: typeof PistasRoute
   PistasV2Route: typeof PistasV2Route
+  PlayerRoute: typeof PlayerRoute
+  PlayersRoute: typeof PlayersRoute
   ResumoRoute: typeof ResumoRoute
   SessaoRoute: typeof SessaoRoute
   SessaoV2Route: typeof SessaoV2Route
@@ -219,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assets': {
+      id: '/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AssetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/consequencias': {
@@ -284,6 +330,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PistasV2RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/player': {
+      id: '/player'
+      path: '/player'
+      fullPath: '/player'
+      preLoaderRoute: typeof PlayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/players': {
+      id: '/players'
+      path: '/players'
+      fullPath: '/players'
+      preLoaderRoute: typeof PlayersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/resumo': {
       id: '/resumo'
       path: '/resumo'
@@ -317,6 +377,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssetsRoute: AssetsRoute,
   ConsequenciasRoute: ConsequenciasRoute,
   DiagramaRoute: DiagramaRoute,
   EditarRoute: EditarRoute,
@@ -326,6 +387,8 @@ const rootRouteChildren: RootRouteChildren = {
   PersonagensRoute: PersonagensRoute,
   PistasRoute: PistasRoute,
   PistasV2Route: PistasV2Route,
+  PlayerRoute: PlayerRoute,
+  PlayersRoute: PlayersRoute,
   ResumoRoute: ResumoRoute,
   SessaoRoute: SessaoRoute,
   SessaoV2Route: SessaoV2Route,
