@@ -224,3 +224,36 @@
   .player-intro-kicker, .player-intro-title, .player-intro-name, .player-intro-subtitle,
   .player-intro-actions { opacity: 1 !important; transform: none !important; filter: none !important; }
 }
+
+/* Mapa: o fullscreen precisa ocupar o viewport real, não herdar os 560px do modo normal. */
+:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #000 !important;
+}
+
+:fullscreen > div.relative.select-none.overflow-hidden.bg-black {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  border-radius: 0 !important;
+}
+
+/* As plantas atuais são quadradas; em fullscreen usamos toda a altura sem deformar. */
+:fullscreen > div.relative.select-none.overflow-hidden.bg-black > div.absolute.inset-0.flex.items-center.justify-center > div.relative.shrink-0 {
+  width: min(100vw, 100vh) !important;
+  height: min(100vw, 100vh) !important;
+}
+
+/* O painel antigo de liberar salas dependia de regiões pré-cadastradas e foi aposentado. */
+section.dossier:has(.lucide-map.size-7) {
+  display: none !important;
+}
