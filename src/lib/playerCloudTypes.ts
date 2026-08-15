@@ -48,7 +48,7 @@ const safePercent = (value: number) => Math.max(0, Math.min(100, Number(value.to
 export function makeManualRevealLocationId(geometry: ManualRevealGeometry) {
   const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2,7)}`;
   return [
-    "manualv2",
+    "manual-v2",
     geometry.floor,
     safePercent(geometry.x).toFixed(2),
     safePercent(geometry.y).toFixed(2),
@@ -59,7 +59,7 @@ export function makeManualRevealLocationId(geometry: ManualRevealGeometry) {
 }
 
 export function decodeManualRevealLocationId(locationId: string): ManualRevealGeometry | null {
-  if (!locationId.startsWith("manualv2~")) return null;
+  if (!locationId.startsWith("manual-v2~")) return null;
   const [, floor, xRaw, yRaw, widthRaw, heightRaw] = locationId.split("~");
   const x = Number(xRaw), y = Number(yRaw), width = Number(widthRaw), height = Number(heightRaw);
   if (!floor || ![x,y,width,height].every(Number.isFinite)) return null;
