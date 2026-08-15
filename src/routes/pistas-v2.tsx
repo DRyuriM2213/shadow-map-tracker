@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Shell } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { CLUES, LOCATIONS } from "@/data/campaignFull";
 import { DOCUMENT_META } from "@/data/documentMeta";
 import { useCampaign } from "@/store/campaign";
 import { clueStatusLabel, importanceLabel, routeBorder } from "@/lib/ui";
-import { AlertTriangle, Lock, X } from "lucide-react";
+import { AlertTriangle, Lock, MapPin, X } from "lucide-react";
 
 export const Route = createFileRoute("/pistas-v2")({ component: PistasV2 });
 
@@ -93,7 +93,14 @@ function ClueDetail({ clue, onClose }: { clue: (typeof CLUES)[number]; onClose: 
     </div>
     <div className="mt-4 grid gap-2 text-sm lg:grid-cols-2"><Result title="Sucesso" text={clue.successResult} /><Result title="Sucesso parcial" text={clue.partialSuccess} /><Result title="Falha" text={clue.failureResult} /><Result title="Falha crítica" text={clue.criticalFailure} /></div>
     <div className="mt-4 rounded-sm border border-route-preto bg-black/40 p-4 text-sm"><p className="stamp text-route-cinza"><Lock className="mr-1 inline size-4" />Segredo / significado para o mestre</p><p className="mt-2">{clue.masterMeaning || "—"}</p>{clue.unlocks && <p className="mt-2"><b>Desbloqueia:</b> {clue.unlocks}</p>}{clue.fallbackOptions.length > 0 && <p className="mt-2"><b>Contingência:</b> {clue.fallbackOptions.join(" • ")}</p>}</div>
-    <div className="mt-4 flex flex-wrap gap-2"><Button size="sm" onClick={() => store.setClue(clue.id, "encontrada", clue.name)}>Entregar pista</Button><select className="rounded-sm border border-input bg-background px-2 py-1 text-xs" value={session.clueStatus[clue.id] ?? "escondida"} onChange={(e) => store.setClue(clue.id, e.target.value as Parameters<typeof store.setClue>[1], clue.name)}>{["escondida","disponivel","encontrada","encontrada-parcialmente","interpretada","nao-interpretada","perdida","destruida","removida","contingencia"].map((s) => <option key={s} value={s}>{s}</option>)}</select><Button size="sm" variant="ghost" onClick={onClose}>Fechar</Button></div>
+    <div className="mt-4 flex flex-wrap gap-2">
+      <Button size="sm" onClick={() => store.setClue(clue.id, "encontrada", clue.name)}>Entregar pista</Button>
+      <select className="rounded-sm border border-input bg-background px-2 py-1 text-xs" value={session.clueStatus[clue.id] ?? "escondida"} onChange={(e) => store.setClue(clue.id, e.target.value as Parameters<typeof store.setClue>[1], clue.name)}>{["escondida","disponivel","encontrada","encontrada-parcialmente","interpretada","nao-interpretada","perdida","destruida","removida","contingencia"].map((s) => <option key={s} value={s}>{s}</option>)}</select>
+      {main && <Button size="sm" variant="outline" onClick={() => store.setLocation(main.id)}><MapPin className="mr-1 size-3.5" />Mover grupo para {main.name}</Button>}
+      <Link to="/mapa"><Button size="sm" variant="outline">Abrir mapa</Button></Link>
+      <Link to="/sessao-v2"><Button size="sm" variant="secondary">Ir para Modo Sessão</Button></Link>
+      <Button size="sm" variant="ghost" onClick={onClose}>Fechar</Button>
+    </div>
   </div></div>;
 }
 
