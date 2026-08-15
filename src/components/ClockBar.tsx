@@ -18,11 +18,66 @@ export function ClockControls({ compact = false }: { compact?: boolean }) {
 
   useEffect(() => setNovo(session.time), [session.time]);
 
+  const quickClass = (minutes: number) => {
+    if (!compact) return "";
+    if (minutes >= 60) return "hidden xl:inline-flex";
+    if (minutes >= 30) return "hidden lg:inline-flex";
+    return "";
+  };
+
   return <div className="flex flex-wrap items-center gap-2 text-xs">
-    <Button size="sm" variant={session.clockRunning ? "destructive" : "default"} onClick={toggleClock}>{session.clockRunning ? <Pause className="mr-1 size-3.5"/> : <Play className="mr-1 size-3.5"/>}{session.clockRunning ? "PAUSAR" : "PLAY"}</Button>
-    <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>{session.clockRunning ? "RODANDO" : "PAUSADO"}</span>
-    <select className="rounded-sm border border-input bg-background px-2 py-1" value={session.clockSpeed} onChange={(e)=>setClockSpeed(Number(e.target.value))} aria-label="Velocidade do relógio">{SPEEDS.map((s)=><option key={s} value={s}>{s}x</option>)}</select>
-    {!compact&&<>{[5,15,30,60].map((m)=><Button key={m} size="sm" variant="outline" onClick={()=>advanceTime(m)}>+{m>=60?"1h":`${m} min`}</Button>)}<Input type="time" className="h-8 w-28" value={novo} onChange={(e)=>setNovo(e.target.value)} onBlur={()=>/^\d{2}:\d{2}$/.test(novo)&&setTime(novo)} aria-label="Horário da campanha"/><Button size="sm" variant="outline" onClick={()=>{if(confirm("Avançar o relógio até o próximo evento?"))jumpToNextEvent();}}>Próximo evento</Button>{session.day===1&&<Button size="sm" variant="outline" onClick={()=>{if(confirm("Executar a transição Dia 1 → evento 03:33 → Dia 2 às 08:00?"))transitionToDay2();}}>Dia 1 → madrugada → Dia 2</Button>}<label className="flex items-center gap-1 text-[11px] text-muted-foreground"><input type="checkbox" checked={session.autoPauseOnTest} onChange={(e)=>setAutoPause(e.target.checked)}/>pausar ao abrir teste/pista/NPC</label></>}
+    <Button size="sm" variant={session.clockRunning ? "destructive" : "default"} onClick={toggleClock}>
+      {session.clockRunning ? <Pause className="mr-1 size-3.5"/> : <Play className="mr-1 size-3.5"/>}
+      {session.clockRunning ? "PAUSAR" : "PLAY"}
+    </Button>
+    <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>
+      {session.clockRunning ? "RODANDO" : "PAUSADO"}
+    </span>
+    <select
+      className="rounded-sm border border-input bg-background px-2 py-1"
+      value={session.clockSpeed}
+      onChange={(e)=>setClockSpeed(Number(e.target.value))}
+      aria-label="Velocidade do relógio"
+    >
+      {SPEEDS.map((s)=><option key={s} value={s}>{s}x</option>)}
+    </select>
+
+    {[5,15,30,60].map((m)=><Button
+      key={m}
+      size="sm"
+      variant="outline"
+      className={quickClass(m)}
+      onClick={()=>advanceTime(m)}
+      title={`Avançar ${m} minutos no jogo`}
+    >
+      +{m>=60?"1h":`${m}`}
+    </Button>)}
+
+    <Input
+      type="time"
+      className={compact ? "hidden h-8 w-24 xl:block" : "h-8 w-28"}
+      value={novo}
+      onChange={(e)=>setNovo(e.target.value)}
+      onBlur={()=>/^\d{2}:\d{2}$/.test(novo)&&setTime(novo)}
+      aria-label="Horário da campanha"
+    />
+
+    <Button
+      size="sm"
+      variant="outline"
+      className={compact ? "hidden 2xl:inline-flex" : ""}
+      onClick={()=>{if(confirm("Avançar o relógio até o próximo evento?"))jumpToNextEvent();}}
+    >
+      Próximo evento
+    </Button>
+
+    {!compact&&<>
+      {session.day===1&&<Button size="sm" variant="outline" onClick={()=>{if(confirm("Executar a transição Dia 1 → evento 03:33 → Dia 2 às 08:00?"))transitionToDay2();}}>Dia 1 → madrugada → Dia 2</Button>}
+      <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+        <input type="checkbox" checked={session.autoPauseOnTest} onChange={(e)=>setAutoPause(e.target.checked)}/>
+        pausar ao abrir teste/pista/NPC
+      </label>
+    </>}
   </div>;
 }
 
