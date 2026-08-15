@@ -1,3 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+
 export type CloudRole = "MASTER" | "PLAYER";
 
 export interface CloudSession {
@@ -15,12 +18,26 @@ export interface CloudSession {
 
 const CLOUD_SESSION_KEY = "berco-vazio-cloud-session";
 
-function env(name: "VITE_SUPABASE_URL" | "VITE_SUPABASE_PUBLISHABLE_KEY") {
-  return (import.meta.env[name] as string | undefined)?.trim();
+// Usa o cliente oficial gerado do projeto (Lovable Cloud). Assim as credenciais
+// vêm do mesmo lugar no preview e no site publicado.
+let clientRef: SupabaseClient | null = null;
+let clientChecked = false;
+
+function getClient(): SupabaseClient | null {
+  if (clientChecked) return clientRef;
+  clientChecked = true;
+  try {
+    // Acessar uma propriedade força a criação do cliente (proxy lazy).
+    void supabase.rpc;
+    clientRef = supabase as unknown as SupabaseClient;
+  } catch {
+    clientRef = null;
+  }
+  return clientRef;
 }
 
 export function cloudConfigured() {
-  return Boolean(env("VITE_SUPABASE_URL") && env("VITE_SUPABASE_PUBLISHABLE_KEY"));
+  return getClient() !== null;
 }
 
 export function getCloudSession(): CloudSession | null {
@@ -43,41 +60,18 @@ export async function rpc<T = Record<string, unknown>>(
   fn: string,
   body: Record<string, unknown> = {},
 ): Promise<T> {
-  const url = env("VITE_SUPABASE_URL");
-  const key = env("VITE_SUPABASE_PUBLISHABLE_KEY");
-  if (!url || !key) throw new Error("Lovable Cloud ainda não está disponível neste build.");
+  const client = getClient();
+  if (!client) throw new Error("Lovable Cloud ainda não está disponível neste build.");
 
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await fetch(`${url}/rest/v1/rpc/${fn}`, {
-      method: "POST",
-      headers: {
-        apikey: key,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    const text = await response.text();
-    let payload: unknown = null;
-    try { payload = text ? JSON.parse(text) : null; } catch { payload = text; }
-    if (!response.ok) {
-      const detail = typeof payload === "object" && payload && "message" in payload
-        ? String((payload as { message?: unknown }).message)
-        : `Erro ${response.status}`;
-      throw new Error(detail);
-    }
-    return payload as T;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("O Cloud demorou para responder. Tente novamente.");
-    }
-    throw error;
-  } finally {
-    window.clearTimeout(timer);
-  }
+  const { data, error } = await (client.rpc as unknown as (
+    name: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message?: string } | null }>)(fn, body);
+
+  if (error) throw new Error(error.message || "Erro no Cloud");
+  return data as T;
 }
+
 
 export async function loginCloud(pin: string): Promise<CloudSession | null> {
   if (!cloudConfigured()) return null;
