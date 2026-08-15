@@ -14,6 +14,14 @@ export interface SharedAsset { asset_key?:string; assetKey?:string; kind:string;
 export interface MasterDashboardData { ok:boolean; error?:string; players:PlayerSummary[]; rolls:CloudRoll[]; publicState?:Record<string,unknown>; mapRegions:MapRegion[]; mapReveals:MapReveal[]; }
 export interface PlayerBootstrapData { ok:boolean; error?:string; profile:{id:string;playerName:string;characterName:string;roleType:PlayerRoleType;avatarUrl?:string|null;canEditSheet:boolean;lastSeen?:string|null}; publicState:Record<string,unknown>; sheet:Partial<CharacterSheetData>; notes:PlayerNote[]; rolls:CloudRoll[]; notifications:CloudNotification[]; clues:CloudClue[]; documents:CloudDocument[]; mapRegions:MapRegion[]; mapReveals:MapReveal[]; assets:SharedAsset[]; serverTime?:string; }
 
+export interface ManualRevealGeometry {
+  floor: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export function normalizePublicState(raw?: Record<string, unknown>): PublicState {
   const r = raw ?? {};
   const day = Number(r["day"] ?? 1) === 2 ? 2 : 1;
@@ -30,3 +38,31 @@ export function normalizePublicState(raw?: Record<string, unknown>): PublicState
 export const regionLocationId=(r:MapRegion)=>r.locationId??r.location_id??"";
 export const revealLocationId=(r:MapReveal)=>r.locationId??r.location_id??"";
 export const revealTargetId=(r:MapReveal)=>r.targetPlayerId??r.target_player_id??null;
+
+const safePercent = (value: number) => Math.max(0, Math.min(100, Number(value.toFixed(2))));
+
+/**
+ * Revelações manuais carregam a geometria no próprio location_id.
+ * Isso serve como fallback caso `map_regions` não seja devolvido por um RPC antigo.
+ */
+export function makeManualRevealLocationId(geometry: ManualRevealGeometry) {
+  const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2,7)}`;
+  return [
+    "manualv2",
+    geometry.floor,
+    safePercent(geometry.x).toFixed(2),
+    safePercent(geometry.y).toFixed(2),
+    safePercent(geometry.width).toFixed(2),
+    safePercent(geometry.height).toFixed(2),
+    nonce,
+  ].join("~");
+}
+
+export function decodeManualRevealLocationId(locationId: string): ManualRevealGeometry | null {
+  if (!locationId.startsWith("manualv2~")) return null;
+  const [, floor, xRaw, yRaw, widthRaw, heightRaw] = locationId.split("~");
+  const x = Number(xRaw), y = Number(yRaw), width = Number(widthRaw), height = Number(heightRaw);
+  if (!floor || ![x,y,width,height].every(Number.isFinite)) return null;
+  if (width <= 0 || height <= 0) return null;
+  return { floor, x: safePercent(x), y: safePercent(y), width: safePercent(width), height: safePercent(height) };
+}
