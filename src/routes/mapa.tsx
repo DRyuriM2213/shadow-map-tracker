@@ -89,11 +89,12 @@ function MapaPage() {
             <div>
               <p className="stamp text-primary">Plantas da Universidade Valença</p>
               <h1 className="text-3xl font-semibold">Mapa Interativo</h1>
-              <p className="text-sm text-muted-foreground">As salas sempre funcionam pela lista. Hotspots só aparecem onde você posicionar — nenhuma coordenada é inventada.</p>
+              <p className="text-sm text-muted-foreground">Clique numa sala para abrir o Inspector. Você pode mover o grupo por aqui sem avançar nenhuma cena narrativa.</p>
             </div>
             <div className="ml-auto flex flex-wrap gap-2">
               {(Object.keys(MAP_IMAGES) as FloorId[]).map((f) => <Button key={f} size="sm" variant={floor === f ? "default" : "outline"} onClick={() => { setFloor(f); resetView(); }}>{MAP_IMAGES[f].label}</Button>)}
               <Button size="sm" variant={numerado ? "default" : "outline"} onClick={() => setNumerado((v) => !v)}>{numerado ? "Numerado" : "Limpo"}</Button>
+              <Link to="/sessao-v2"><Button size="sm" variant="secondary">Modo Sessão</Button></Link>
               <Link to="/assets"><Button size="sm" variant="outline"><ImageIcon className="mr-1 size-4" />Imagens</Button></Link>
               <Button size="sm" variant={editar ? "destructive" : "ghost"} onClick={() => setEditar((v) => !v)}>{editar ? "Sair da edição" : "Editar áreas"}</Button>
             </div>
@@ -136,12 +137,13 @@ function MapaPage() {
                       const achados = loc ? cluesForLocation(loc.id) : [];
                       const pendentes = achados.filter((c) => !["encontrada", "interpretada", "contingencia"].includes(session.clueStatus[c.id] ?? "")).length;
                       const visitado = st && st !== "nao-visitada";
+                      const statusText = ativo ? "grupo aqui" : st ?? "não visitada";
                       return (
                         <button
                           key={h.id}
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => setAberto(h)}
-                          title={`${h.name}${pendentes ? ` · ${pendentes} pistas pendentes` : ""}`}
+                          title={`${h.name} · ${achados.length} achados · ${pendentes} pendentes · ${statusText}`}
                           style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.w}%`, height: `${p.h}%` }}
                           className={`absolute rounded-sm border-2 transition-colors ${ativo ? "border-primary bg-primary/30" : h.restricted ? "border-destructive/70 bg-destructive/10 hover:bg-destructive/25" : pendentes > 0 ? "border-route-amarelo/55 bg-route-amarelo/5 hover:bg-route-amarelo/15" : visitado ? "border-route-verde-claro/40 bg-route-verde-claro/5" : "border-transparent hover:border-primary hover:bg-primary/15"}`}
                         ><span className="sr-only">{h.name}</span></button>
@@ -171,12 +173,24 @@ function MapaPage() {
               const clues = loc ? cluesForLocation(loc.id) : [];
               const pending = clues.filter((c) => !["encontrada", "interpretada", "contingencia"].includes(session.clueStatus[c.id] ?? "")).length;
               const active = h.locationId === session.currentLocationId;
+              const status = h.locationId ? session.locationStatus[h.locationId] ?? "nao-visitada" : "sem local";
               return (
                 <div key={h.id} className={`rounded-sm border p-2 ${active ? "border-primary bg-primary/10" : "border-border"}`}>
-                  <button className="w-full text-left" onClick={() => setAberto(h)}>
-                    <div className="flex items-start justify-between gap-2"><p className="text-sm font-semibold">{h.name}{h.restricted && <span className="stamp ml-2 text-destructive">restrito</span>}</p>{active && <span className="stamp text-primary">grupo aqui</span>}</div>
-                    <p className="text-[11px] text-muted-foreground">{loc ? `${clues.length} achados · ${pending} pendentes` : "sem sala vinculada"}{p ? "" : " · sem posição"}</p>
-                  </button>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{h.name}{h.restricted && <span className="stamp ml-2 text-destructive">restrito</span>}</p>
+                      <p className="text-[11px] text-muted-foreground">{loc ? `${clues.length} achados · ${pending} pendentes · ${status}` : "sem sala vinculada"}{p ? "" : " · sem posição"}</p>
+                    </div>
+                    {active && <span className="stamp shrink-0 text-primary">grupo aqui</span>}
+                  </div>
+
+                  {!editar && loc && (
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => setAberto(h)}>ABRIR SALA</Button>
+                      <Button size="sm" variant={active ? "secondary" : "default"} onClick={() => setLocation(loc.id)}>{active ? "GRUPO AQUI" : "MOVER GRUPO"}</Button>
+                    </div>
+                  )}
+
                   {editar && (
                     <div className="mt-2 space-y-2 border-t border-border pt-2">
                       <div className="grid grid-cols-4 gap-1">
@@ -211,7 +225,30 @@ function MapaPage() {
 
       <Dialog open={!!aberto} onOpenChange={(o) => !o && setAberto(null)}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
-          {aberto && <><DialogHeader><DialogTitle className="font-display text-3xl">{aberto.name}</DialogTitle></DialogHeader>{aberto.locationId ? <><RoomInspector locationId={aberto.locationId} /><Button className="mt-2" onClick={() => { setLocation(aberto.locationId!); setAberto(null); }}>Levar o grupo para cá</Button></> : <p className="text-sm text-muted-foreground">Área informativa sem local canônico vinculado.</p>}</>}
+          {aberto && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-display text-3xl">{aberto.name}</DialogTitle>
+              </DialogHeader>
+              {aberto.locationId ? (
+                <>
+                  <RoomInspector locationId={aberto.locationId} />
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+                    <Button
+                      onClick={() => setLocation(aberto.locationId!)}
+                      variant={session.currentLocationId === aberto.locationId ? "secondary" : "default"}
+                    >
+                      {session.currentLocationId === aberto.locationId ? "GRUPO JÁ ESTÁ AQUI" : "MOVER GRUPO PARA CÁ"}
+                    </Button>
+                    <Link to="/sessao-v2"><Button variant="outline">IR PARA MODO SESSÃO</Button></Link>
+                    <Button variant="ghost" onClick={() => setAberto(null)}>Fechar</Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Área informativa sem local canônico vinculado.</p>
+              )}
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </Shell>
