@@ -153,17 +153,74 @@
 }
 @utility pulse-available { animation: pulse-node 2.2s ease-in-out infinite; }
 
-/* Player terminal intros — original visual language for Berço Vazio. */
-.player-scanlines {
-  background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255,255,255,.025) 3px 4px);
-  mix-blend-mode: screen;
-}
-.player-glitch-blue { background: radial-gradient(circle at 50% 45%, rgba(34,211,238,.12), transparent 35%), repeating-linear-gradient(90deg, transparent 0 13%, rgba(34,211,238,.035) 13.2% 13.5%, transparent 13.7% 26%); animation: terminal-flicker 3.1s steps(2,end) infinite; }
-.player-glitch-red { background: radial-gradient(circle at 50% 45%, rgba(220,38,38,.14), transparent 38%), repeating-linear-gradient(105deg, transparent 0 18%, rgba(220,38,38,.04) 18.3% 18.8%, transparent 19% 31%); animation: terminal-flicker 2.4s steps(2,end) infinite; }
-.player-glitch-amber { background: linear-gradient(rgba(251,191,36,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(251,191,36,.025) 1px, transparent 1px); background-size: 28px 28px; animation: terminal-flicker 4s steps(2,end) infinite; }
-.player-intro-reveal { animation: player-reveal .65s cubic-bezier(.2,.8,.2,1) both, text-glitch 2.6s 1s steps(2,end) infinite; }
+/* Player terminal intros — cinematic identity sequence. */
+.player-intro-shell { animation: intro-power-on .42s steps(2,end) both; }
+.player-intro-exit { animation: intro-power-off .3s ease-in both; }
+.player-intro-vignette { background: radial-gradient(circle at 50% 45%, transparent 0 28%, rgba(0,0,0,.28) 62%, rgba(0,0,0,.8) 100%); }
+.player-intro-noise { opacity: .08; background-image: repeating-radial-gradient(circle at 40% 20%, rgba(255,255,255,.45) 0 .6px, transparent .8px 2.8px); background-size: 9px 9px; animation: intro-noise .18s steps(2,end) infinite; }
+.player-scanlines { background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255,255,255,.025) 3px 4px); mix-blend-mode: screen; }
+.player-intro-scan-beam { z-index: 1; height: 1px; filter: blur(.3px) drop-shadow(0 0 9px currentColor); animation: intro-scan 3.6s linear infinite; opacity: .55; }
+.player-agent-grid { background-image: linear-gradient(rgba(34,211,238,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,.025) 1px, transparent 1px); background-size: 48px 48px; mask-image: radial-gradient(circle at center, black, transparent 74%); }
+.player-civil-grid { background-image: linear-gradient(rgba(251,191,36,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(251,191,36,.025) 1px, transparent 1px); background-size: 28px 28px; mask-image: radial-gradient(circle at center, black, transparent 72%); }
+.player-glitch-blue { background: radial-gradient(circle at 50% 45%, rgba(34,211,238,.13), transparent 36%), repeating-linear-gradient(90deg, transparent 0 13%, rgba(34,211,238,.035) 13.2% 13.5%, transparent 13.7% 26%); animation: terminal-flicker 3.1s steps(2,end) infinite; }
+.player-glitch-red { background: radial-gradient(circle at 50% 45%, rgba(220,38,38,.18), transparent 39%), repeating-linear-gradient(105deg, transparent 0 18%, rgba(220,38,38,.05) 18.3% 18.8%, transparent 19% 31%); animation: terminal-flicker 2.15s steps(2,end) infinite; }
+.player-glitch-amber { background: radial-gradient(circle at 50% 45%, rgba(251,191,36,.075), transparent 38%), linear-gradient(rgba(251,191,36,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(251,191,36,.018) 1px, transparent 1px); background-size: auto, 28px 28px, 28px 28px; animation: terminal-flicker 4s steps(2,end) infinite; }
+
+.player-intro-frame { animation: intro-frame-in .64s .22s cubic-bezier(.16,.82,.22,1) both; box-shadow: 0 0 0 1px rgba(255,255,255,.025) inset, 0 36px 100px -45px #000; }
+.player-intro-agent { box-shadow: 0 0 95px rgba(34,211,238,.14), 0 0 0 1px rgba(34,211,238,.05) inset; }
+.player-intro-villain { box-shadow: 0 0 110px rgba(220,38,38,.2), 0 0 0 1px rgba(239,68,68,.055) inset; animation-name: intro-frame-in, villain-frame-pulse; animation-duration: .64s, 3.8s; animation-delay: .22s, 1.4s; animation-timing-function: cubic-bezier(.16,.82,.22,1), ease-in-out; animation-iteration-count: 1, infinite; animation-fill-mode: both; }
+.player-intro-civil { box-shadow: 0 0 90px rgba(251,191,36,.11), 0 0 0 1px rgba(251,191,36,.045) inset; }
+.player-intro-topline { animation: intro-fade-up .45s .48s ease-out both; }
+.player-intro-symbol-wrap { animation: intro-symbol-in .95s .5s cubic-bezier(.16,.85,.18,1) both; }
+.player-intro-symbol { animation: intro-symbol-breathe 4s 1.5s ease-in-out infinite; }
+.player-intro-ring { transform-origin: center; }
+.player-intro-ring-a { animation: intro-ring-clockwise 18s linear infinite; border-style: dashed; }
+.player-intro-ring-b { animation: intro-ring-counter 13s linear infinite; }
+.player-intro-crosshair { background: linear-gradient(90deg, transparent 49.7%, currentColor 49.9% 50.1%, transparent 50.3%), linear-gradient(transparent 49.7%, currentColor 49.9% 50.1%, transparent 50.3%); mask-image: radial-gradient(circle at center, black 0 58%, transparent 59%); }
+.player-intro-kicker { animation: intro-fade-up .4s .95s ease-out both; }
+.player-intro-title { animation: intro-title .62s 1.15s cubic-bezier(.16,.86,.18,1) both, text-glitch 3.2s 2.8s steps(2,end) infinite; }
+.player-intro-name { animation: intro-name .7s 1.42s cubic-bezier(.16,.9,.18,1) both, text-glitch 2.9s 3.4s steps(2,end) infinite; text-wrap: balance; }
+.player-intro-subtitle { animation: intro-fade-up .5s 1.82s ease-out both; }
+.player-intro-actions { animation: intro-fade-up .55s 2.22s ease-out both; }
+.player-villain-sigil { animation: villain-sigil-breathe 4.6s ease-in-out infinite; filter: drop-shadow(0 0 28px rgba(239,68,68,.35)); }
 .player-pentagram { transform-origin: center; animation: pentagram-turn 18s linear infinite; }
-@keyframes player-reveal { from { opacity: 0; transform: translateY(8px); filter: blur(6px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
-@keyframes terminal-flicker { 0%, 94%, 100% { opacity: .92; transform: translateX(0); } 95% { opacity: .55; transform: translateX(3px); } 96% { opacity: 1; transform: translateX(-2px); } }
-@keyframes text-glitch { 0%, 89%, 100% { text-shadow: none; } 90% { text-shadow: 3px 0 rgba(34,211,238,.65), -2px 0 rgba(239,68,68,.45); } 92% { text-shadow: -2px 0 rgba(34,211,238,.5), 2px 0 rgba(239,68,68,.35); } }
+.player-fingerprint-scan { box-shadow: 0 0 14px currentColor; animation: fingerprint-scan 2.25s 1.15s ease-in-out infinite; }
+
+.player-corner { position: absolute; width: 23px; height: 23px; opacity: .58; pointer-events: none; }
+.player-corner::before, .player-corner::after { content: ""; position: absolute; background: currentColor; }
+.player-corner::before { width: 23px; height: 1px; }
+.player-corner::after { width: 1px; height: 23px; }
+.player-corner-tl { top: 9px; left: 9px; }
+.player-corner-tr { top: 9px; right: 9px; transform: rotate(90deg); }
+.player-corner-br { right: 9px; bottom: 9px; transform: rotate(180deg); }
+.player-corner-bl { left: 9px; bottom: 9px; transform: rotate(270deg); }
+
+@keyframes intro-power-on { 0% { opacity: 0; filter: brightness(3); } 24% { opacity: 1; filter: brightness(.35); } 31% { opacity: .35; } 42%, 100% { opacity: 1; filter: brightness(1); } }
+@keyframes intro-power-off { to { opacity: 0; transform: scale(1.012); filter: blur(4px) brightness(1.7); } }
+@keyframes intro-frame-in { from { opacity: 0; transform: scale(.975); filter: blur(8px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
+@keyframes intro-symbol-in { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); filter: blur(12px) brightness(2.2); } 64% { opacity: 1; transform: scale(1.055) rotate(1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0) brightness(1); } }
+@keyframes intro-symbol-breathe { 0%,100% { filter: drop-shadow(0 0 5px currentColor); transform: scale(1); } 50% { filter: drop-shadow(0 0 18px currentColor); transform: scale(1.025); } }
+@keyframes intro-title { from { opacity: 0; letter-spacing: .34em; transform: translateY(7px); filter: blur(4px); } to { opacity: 1; letter-spacing: .16em; transform: translateY(0); filter: blur(0); } }
+@keyframes intro-name { from { opacity: 0; transform: translateY(10px) scale(.975); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+@keyframes intro-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes intro-ring-clockwise { to { transform: rotate(360deg); } }
+@keyframes intro-ring-counter { to { transform: rotate(-360deg); } }
+@keyframes intro-scan { 0% { transform: translateY(-4vh); opacity: 0; } 10% { opacity: .55; } 88% { opacity: .42; } 100% { transform: translateY(108vh); opacity: 0; } }
+@keyframes intro-noise { 0% { transform: translate(0,0); } 25% { transform: translate(-1px,1px); } 50% { transform: translate(1px,0); } 75% { transform: translate(0,-1px); } }
+@keyframes terminal-flicker { 0%, 92%, 100% { opacity: .92; transform: translateX(0); } 93% { opacity: .45; transform: translateX(4px); } 94% { opacity: 1; transform: translateX(-3px); } 95% { opacity: .72; transform: translateX(1px); } }
+@keyframes text-glitch { 0%, 89%, 100% { text-shadow: none; transform: translateX(0); } 90% { text-shadow: 3px 0 rgba(34,211,238,.65), -2px 0 rgba(239,68,68,.48); transform: translateX(1px); } 92% { text-shadow: -2px 0 rgba(34,211,238,.5), 2px 0 rgba(239,68,68,.38); transform: translateX(-1px); } }
 @keyframes pentagram-turn { to { transform: rotate(360deg); } }
+@keyframes villain-sigil-breathe { 0%,100% { opacity: .085; transform: translate(-50%,-50%) scale(.98) rotate(0); } 50% { opacity: .16; transform: translate(-50%,-50%) scale(1.045) rotate(3deg); } }
+@keyframes villain-frame-pulse { 0%,100% { border-color: rgba(220,38,38,.42); } 50% { border-color: rgba(248,113,113,.72); } }
+@keyframes fingerprint-scan { 0%,100% { top: 18%; opacity: .1; } 50% { top: 78%; opacity: .9; } }
+
+@media (max-width: 640px) {
+  .player-intro-frame { max-height: 96vh; overflow-y: auto; }
+  .player-intro-name { font-size: clamp(1.7rem, 10vw, 3rem); overflow-wrap: anywhere; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-intro-frame, .player-intro-topline, .player-intro-symbol-wrap, .player-intro-symbol,
+  .player-intro-kicker, .player-intro-title, .player-intro-name, .player-intro-subtitle,
+  .player-intro-actions { opacity: 1 !important; transform: none !important; filter: none !important; }
+}
