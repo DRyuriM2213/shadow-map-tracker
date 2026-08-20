@@ -7,6 +7,8 @@ import { regionLocationId } from "@/lib/playerCloudTypes";
 import { MAP_IMAGES, type FloorId } from "@/data/map";
 import { ChevronDown, ChevronUp, RefreshCw, Trash2 } from "lucide-react";
 
+export const MAP_REGIONS_CHANGED_EVENT = "berco-map-regions-changed";
+
 export function MapAreaManager() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [open, setOpen] = useState(false);
@@ -71,7 +73,7 @@ export function MapAreaManager() {
 
       setData(dashboard);
       setNotice("Área excluída do Cloud e das liberações dos players.");
-      window.setTimeout(() => window.location.reload(), 450);
+      window.dispatchEvent(new CustomEvent(MAP_REGIONS_CHANGED_EVENT, { detail: { floor, locationId, action: "deleted" } }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao excluir a área.");
     } finally {
@@ -82,7 +84,7 @@ export function MapAreaManager() {
   return (
     <div className="fixed bottom-4 right-4 z-[80] w-[min(390px,calc(100vw-2rem))]">
       {open && (
-        <div className="mb-2 max-h-[62vh] overflow-y-auto rounded-md border border-border bg-background/97 p-3 shadow-2xl backdrop-blur-xl">
+        <div className="dossier mb-2 max-h-[62vh] overflow-y-auto p-3 backdrop-blur-xl">
           <div className="mb-3 flex items-start justify-between gap-2">
             <div>
               <p className="stamp text-primary">GERENCIAR ÁREAS</p>
@@ -94,8 +96,8 @@ export function MapAreaManager() {
             </Button>
           </div>
 
-          {error && <p className="mb-2 rounded-sm border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive">{error}</p>}
-          {notice && <p className="mb-2 rounded-sm border border-route-verde/40 bg-route-verde/10 p-2 text-xs text-route-verde-claro">{notice}</p>}
+          {error && <p className="mb-2 rounded-lg border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive">{error}</p>}
+          {notice && <p className="mb-2 rounded-lg border border-route-verde/40 bg-route-verde/10 p-2 text-xs text-route-verde-claro">{notice}</p>}
 
           <div className="space-y-2">
             {areas.map((region, index) => {
@@ -103,7 +105,7 @@ export function MapAreaManager() {
               const floor = region.floor as FloorId;
               const floorLabel = MAP_IMAGES[floor]?.label ?? region.floor;
               return (
-                <div key={region.id ?? id} className="flex items-center gap-2 rounded-sm border border-border bg-card/45 p-2.5">
+                <div key={region.id ?? id} className="flex items-center gap-2 rounded-lg border border-border/75 bg-card/45 p-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold">Área {index + 1} · {floorLabel}</p>
                     <p className="mt-0.5 font-mono text-[9px] text-muted-foreground">x {Number(region.x).toFixed(1)} · y {Number(region.y).toFixed(1)} · {Number(region.width).toFixed(1)} × {Number(region.height).toFixed(1)}%</p>
@@ -121,7 +123,7 @@ export function MapAreaManager() {
                 </div>
               );
             })}
-            {!areas.length && <p className="rounded-sm border border-dashed border-border p-3 text-center text-xs text-muted-foreground">Nenhuma área manual salva no Cloud.</p>}
+            {!areas.length && <p className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">Nenhuma área manual salva no Cloud.</p>}
           </div>
         </div>
       )}
