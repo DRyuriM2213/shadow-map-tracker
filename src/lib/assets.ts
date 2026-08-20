@@ -14,10 +14,10 @@ export type MapAssetKey =
   | "map:superior:numerado";
 
 export const MAP_ASSET_SLOTS: { key: MapAssetKey; label: string }[] = [
-  { key: "map:primeiro:limpo", label: "Primeiro andar — limpo" },
-  { key: "map:primeiro:numerado", label: "Primeiro andar — numerado" },
+  { key: "map:primeiro:limpo", label: "Térreo — limpo" },
+  { key: "map:primeiro:numerado", label: "Térreo — investigação" },
   { key: "map:superior:limpo", label: "Andar superior — limpo" },
-  { key: "map:superior:numerado", label: "Andar superior — numerado" },
+  { key: "map:superior:numerado", label: "Andar superior — investigação" },
 ];
 
 function openDb(): Promise<IDBDatabase> {
