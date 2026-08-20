@@ -39,6 +39,8 @@ function LoginScreen() {
   const [editing, setEditing] = useState(false);
   const [erro, setErro] = useState("");
   const [busy, setBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const expected = pin || "333";
 
   const submit = async () => {
@@ -87,7 +89,7 @@ function LoginScreen() {
           <div className="space-y-2">
             <Label htmlFor="pin">PIN de acesso</Label>
             <Input id="pin" autoFocus inputMode="numeric" autoComplete="off" value={code} onChange={(e) => { setCode(e.target.value); setErro(""); }} placeholder="••••••" />
-            {!pin && <p className="text-xs text-muted-foreground">PIN inicial do mestre: <b>333</b>. PINs de jogadores são criados pelo mestre.</p>}
+            {(!mounted || !pin) && <p className="text-xs text-muted-foreground">PIN inicial do mestre: <b>333</b>. PINs de jogadores são criados pelo mestre.</p>}
           </div>
           {erro && <p className="text-sm text-destructive">{erro}</p>}
           <Button type="submit" className="w-full" disabled={busy}><Lock className="mr-2 size-4" />{busy ? "Verificando…" : "Entrar"}</Button>
@@ -114,6 +116,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const { proximo, countdown } = useTimelineStatus();
   const { pace } = useSessionPace();
   const [cloudSync, setCloudSync] = useState<"online" | "offline" | "syncing">(() => cloudConfigured() && getCloudSession()?.role === "MASTER" ? "online" : "offline");
+  // O estado autenticado vem do localStorage; sem este gate o SSR e o cliente divergem e o React descarta a árvore.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   const scene = SCENES.find((s) => s.id === session.currentSceneId);
   const local = LOCATIONS.find((l) => l.id === session.currentLocationId);
@@ -137,7 +142,7 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [authed, session.day, session.time, session.currentLocationId, local?.name]);
 
-  if (!authed) return <LoginScreen />;
+  if (!authed || !hydrated) return <LoginScreen />;
 
   return (
     <div className="min-h-screen">

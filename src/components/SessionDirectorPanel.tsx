@@ -92,7 +92,8 @@ export function SessionDirectorPanel() {
     return loc ? [{...route, locationId:loc.id, locationName:loc.name}] : [];
   }), []);
 
-  if (pathname !== "/sessao-v2") return null;
+  // Ferramenta exclusiva do mestre: nunca aparece na tela de login nem fora do cockpit.
+  if (pathname !== "/sessao-v2" || !store.authed) return null;
 
   const generate = (nextSeed = seed) => {
     const next = buildNarration(location?.name ?? "o local", location?.description ?? "", mode, intensity, length, sense, action, nextSeed);
