@@ -1,8 +1,9 @@
 import type { CharacterSheetData } from "@/data/ordemRules";
 
 export type PlayerRoleType = "AGENTE_DA_ORDEM" | "VILAO" | "CIVIL";
+export type PublicCampaignDay = 1 | 2 | 3 | 4 | 5;
 export interface PlayerSummary { id:string; playerName:string; characterName:string; roleType:PlayerRoleType; active:boolean; avatarUrl?:string|null; masterNote:string; canEditSheet:boolean; createdAt?:string; updatedAt?:string; lastSeen?:string|null; hasSheet:boolean; }
-export interface PublicState { day:1|2; time:string; currentLocationId?:string|null; currentLocationName?:string|null; shareLocation:boolean; objective:string; updatedAt?:string; }
+export interface PublicState { day:PublicCampaignDay; time:string; currentLocationId?:string|null; currentLocationName?:string|null; shareLocation:boolean; objective:string; updatedAt?:string; }
 export interface CloudRoll { id:string; playerId:string; playerName?:string; characterName?:string; visibility:"PUBLICA"|"PRIVADA"; label:string; formula:string; payload:Record<string,unknown>; total?:number|null; createdAt:string; }
 export interface CloudNotification { id:string; kind:string; title:string; body:string; is_read?:boolean; isRead?:boolean; created_at?:string; createdAt?:string; }
 export interface CloudClue { id:string; clue_id?:string; clueId?:string; title:string; description:string; document_title?:string|null; documentTitle?:string|null; private_message?:string; privateMessage?:string; created_at?:string; createdAt?:string; }
@@ -24,7 +25,8 @@ export interface ManualRevealGeometry {
 
 export function normalizePublicState(raw?: Record<string, unknown>): PublicState {
   const r = raw ?? {};
-  const day = Number(r["day"] ?? 1) === 2 ? 2 : 1;
+  const rawDay = Number(r["day"] ?? 1);
+  const day = (rawDay >= 1 && rawDay <= 5 ? rawDay : 1) as PublicCampaignDay;
   return {
     day,
     time: String(r["time"] ?? "08:00"),
