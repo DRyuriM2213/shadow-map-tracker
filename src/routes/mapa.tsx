@@ -424,7 +424,7 @@ function MapaPage() {
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center text-muted-foreground">
                   <ImageIcon className="size-12 opacity-50" />
-                  <div><p className="font-semibold text-foreground">Imagem deste mapa ainda não carregada</p><p className="mt-1 max-w-md text-sm">Carregue a planta uma vez no Gerenciador de Imagens. Ela ficará salva neste navegador e não precisa de novo deploy.</p></div>
+                  <div><p className="font-semibold text-foreground">Imagem deste mapa não pôde ser exibida</p><p className="mt-1 max-w-md text-sm">O arquivo estático <code className="font-mono text-xs">{staticSrc}</code> não abriu (ausente ou corrompido). Carregue a planta canônica uma vez no Gerenciador de Imagens: ela fica salva neste navegador e passa a ter prioridade sobre o arquivo estático.</p></div>
                   <Link to="/assets"><Button>Carregar mapa</Button></Link>
                 </div>
               )}
