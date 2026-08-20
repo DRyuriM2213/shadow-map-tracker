@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { getCloudSession, requirePlayerSession, rpc } from "@/lib/cloud";
@@ -7,6 +7,11 @@ import { Maximize2, Radio, X } from "lucide-react";
 type BroadcastItem = { id:string; title:string; caption:string; imageData:string; createdAt:string };
 type FeedResponse = { ok:boolean; error?:string; media?:BroadcastItem[]; activeIds?:string[] };
 
+function loadDismissed(storageKey:string){
+  if(typeof window==="undefined")return [] as string[];
+  try{return JSON.parse(sessionStorage.getItem(storageKey)??"[]") as string[];}catch{return [] as string[];}
+}
+
 export function LiveMediaReceiver(){
   const pathname=useRouterState({select:s=>s.location.pathname});
   const cloud=getCloudSession();
@@ -14,11 +19,46 @@ export function LiveMediaReceiver(){
   const playerId=cloud?.player?.id??"player";
   const storageKey=`berco-media-dismissed:${playerId}`;
   const [items,setItems]=useState<BroadcastItem[]>([]);
-  const [dismissed,setDismissed]=useState<string[]>(()=>{if(typeof window==="undefined")return[];try{return JSON.parse(sessionStorage.getItem(storageKey)??"[]") as string[];}catch{return[];}});
+  const [dismissed,setDismissed]=useState<string[]>(()=>loadDismissed(storageKey));
   const [zoomed,setZoomed]=useState(false);
-  const poll=useCallback(async()=>{const current=requirePlayerSession();if(!current)return;try{const known=[...new Set([...items.map(i=>i.id),...dismissed])];const result=await rpc<FeedResponse>("player_media_feed",{p_token:current.token,p_known_ids:known.length?known:null});if(!result.ok)return;const active=new Set(result.activeIds??[]);setItems(prev=>{const merged=[...(result.media??[]),...prev.filter(i=>active.has(i.id))];return Array.from(new Map(merged.filter(i=>active.has(i.id)).map(i=>[i.id,i])).values()).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));});}catch{/* tenta novamente no próximo ciclo */}},[items,dismissed]);
-  useEffect(()=>{if(!isRealPlayer)return;void poll();const timer=window.setInterval(()=>void poll(),1500);return()=>window.clearInterval(timer);},[isRealPlayer,poll]);
-  useEffect(()=>{if(typeof window!=="undefined")sessionStorage.setItem(storageKey,JSON.stringify(dismissed.slice(-80)));},[dismissed,storageKey]);
+  const itemsRef=useRef<BroadcastItem[]>(items);
+  const dismissedRef=useRef<string[]>(dismissed);
+
+  useEffect(()=>{itemsRef.current=items;},[items]);
+  useEffect(()=>{dismissedRef.current=dismissed;},[dismissed]);
+  useEffect(()=>{
+    const next=loadDismissed(storageKey);
+    setItems([]);
+    setDismissed(next);
+    setZoomed(false);
+  },[storageKey]);
+
+  const poll=useCallback(async()=>{
+    const current=requirePlayerSession();
+    if(!current)return;
+    try{
+      const known=[...new Set([...itemsRef.current.map(i=>i.id),...dismissedRef.current])];
+      const result=await rpc<FeedResponse>("player_media_feed",{p_token:current.token,p_known_ids:known.length?known:null});
+      if(!result.ok)return;
+      const active=new Set(result.activeIds??[]);
+      setItems(prev=>{
+        const merged=[...(result.media??[]),...prev.filter(i=>active.has(i.id))];
+        return Array.from(new Map(merged.filter(i=>active.has(i.id)).map(i=>[i.id,i])).values()).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+      });
+    }catch{/* tenta novamente no próximo ciclo */}
+  },[]);
+
+  useEffect(()=>{
+    if(!isRealPlayer)return;
+    void poll();
+    const timer=window.setInterval(()=>void poll(),1500);
+    return()=>window.clearInterval(timer);
+  },[isRealPlayer,poll]);
+
+  useEffect(()=>{
+    if(typeof window!=="undefined")sessionStorage.setItem(storageKey,JSON.stringify(dismissed.slice(-80)));
+  },[dismissed,storageKey]);
+
   const current=useMemo(()=>items.find(i=>!dismissed.includes(i.id))??null,[items,dismissed]);
   if(!isRealPlayer||!current)return null;
   const close=()=>{setDismissed(old=>[...new Set([...old,current.id])]);setZoomed(false);};
