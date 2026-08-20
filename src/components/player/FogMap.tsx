@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MAP_IMAGES, type FloorId } from "@/data/map";
+import { useAsset } from "@/lib/useAsset";
 import type { MapRegion, MapReveal, SharedAsset } from "@/lib/playerCloudTypes";
 import { decodeManualRevealLocationId, regionLocationId, revealLocationId, revealTargetId } from "@/lib/playerCloudTypes";
 import { AlertTriangle, Eye, Map as MapIcon } from "lucide-react";
@@ -12,11 +13,13 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
   const [imageReady, setImageReady] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [sharedAssetFailed, setSharedAssetFailed] = useState(false);
+  const localImage = useAsset(`map:${floor}:limpo`);
 
   const asset = (key: string) => assets.find(a => (a.assetKey ?? a.asset_key) === key)?.publicUrl ?? assets.find(a => (a.assetKey ?? a.asset_key) === key)?.public_url;
   const sharedImage = asset(`map:${floor}:limpo`) ?? "";
   const usingSharedImage = !!sharedImage && !sharedAssetFailed;
-  const image = usingSharedImage ? sharedImage : MAP_IMAGES[floor].limpo;
+  const usingLocalImage = !usingSharedImage && !!localImage;
+  const image = usingSharedImage ? sharedImage : localImage ?? MAP_IMAGES[floor].limpo;
 
   useEffect(() => {
     setSharedAssetFailed(false);
@@ -88,6 +91,8 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
     setImageFailed(true);
   };
 
+  const sourceLabel = usingSharedImage ? "asset compartilhado" : usingLocalImage ? "asset restaurado neste navegador" : "fallback estático";
+
   return <section className="space-y-4">
     <div className="flex flex-wrap items-center gap-2">
       <div>
@@ -101,7 +106,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
       </div>
     </div>
 
-    <div className="relative min-h-[360px] overflow-hidden rounded-sm border border-border bg-black shadow-2xl">
+    <div className="player-terminal-card relative min-h-[360px] overflow-hidden border bg-black shadow-2xl">
       <img
         key={`sizer-${floor}-${image}`}
         src={image}
@@ -117,12 +122,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
         <div
           key={`${floor}-${region.id}`}
           className="absolute overflow-hidden bg-black ring-1 ring-white/10"
-          style={{
-            left: `${region.x}%`,
-            top: `${region.y}%`,
-            width: `${region.width}%`,
-            height: `${region.height}%`,
-          }}
+          style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }}
         >
           <img
             src={image}
@@ -130,21 +130,17 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
             aria-hidden
             draggable={false}
             className="pointer-events-none absolute max-w-none select-none"
-            style={{
-              width: `${10000 / region.width}%`,
-              height: `${10000 / region.height}%`,
-              left: `${-(region.x / region.width) * 100}%`,
-              top: `${-(region.y / region.height) * 100}%`,
-            }}
+            style={{ width: `${10000 / region.width}%`, height: `${10000 / region.height}%`, left: `${-(region.x / region.width) * 100}%`, top: `${-(region.y / region.height) * 100}%` }}
           />
         </div>
       ))}
 
       {imageFailed && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-amber-300">
-          <AlertTriangle className="size-10" />
-          <p className="mt-3 font-semibold">A planta deste piso está indisponível</p>
-          <p className="mt-1 max-w-lg text-xs text-zinc-400">A revelação foi preservada no Cloud. O terminal tentou primeiro a imagem compartilhada pelo mestre e depois a planta padrão; quando uma delas voltar a carregar, as áreas reaparecem na posição correta.</p>
+        <div className="map-recovery-panel absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-amber-200">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-amber-500/25 bg-amber-500/10"><AlertTriangle className="size-7" /></div>
+          <p className="mt-4 font-semibold text-zinc-100">Planta aguardando restauração</p>
+          <p className="mt-1 max-w-lg text-xs leading-relaxed text-zinc-400">As áreas liberadas continuam preservadas no Cloud. O terminal tentou o asset compartilhado, um asset local validado e a planta estática; nenhuma fonte válida está disponível neste momento.</p>
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-amber-300/80">Fog preservado · nenhuma coordenada foi perdida</p>
         </div>
       )}
 
@@ -157,10 +153,10 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
       )}
     </div>
 
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
       <Eye className="size-3.5" />
       <span>{safeRegions.length} área(s) visível(is) neste piso.</span>
-      {imageReady && <span className="text-route-verde-claro">· planta carregada{sharedImage && sharedAssetFailed ? " pelo fallback local" : ""}</span>}
+      {imageReady && <span className="text-route-verde-claro">· planta carregada via {sourceLabel}</span>}
     </div>
   </section>;
 }

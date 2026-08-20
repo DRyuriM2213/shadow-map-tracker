@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { LOCATIONS, SCENES } from "@/data/campaignFull";
-import { FlaskConical, Lock, Save, Users } from "lucide-react";
+import { FlaskConical, Lock, Save, Shield, Users } from "lucide-react";
 import { useClockEngine, useSessionPace, useTimelineStatus, paceLabel, paceTone } from "@/lib/clock";
 import { ClockControls, EventAlert } from "@/components/ClockBar";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -67,7 +67,6 @@ function LoginScreen() {
       }
     }
 
-    // Fallback deliberado: o painel do mestre nunca fica inutilizável se o Cloud cair.
     if (code === expected) {
       if (!pin) setPin("333");
       login();
@@ -79,27 +78,31 @@ function LoginScreen() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="dossier w-full max-w-md rounded-sm p-6 sm:p-8">
-        <p className="stamp text-primary">Terminal de acesso</p>
-        <h1 className="mt-3 text-3xl font-semibold">OPERAÇÃO BERÇO VAZIO</h1>
-        <p className="mt-1 text-sm text-muted-foreground">O mesmo terminal reconhece mestre e perfis de jogador.</p>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
+      <div className="pointer-events-none absolute left-1/2 top-1/2 size-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-3xl" />
+      <div className="dossier hero-panel player-terminal-card relative w-full max-w-md p-6 sm:p-8">
+        <div className="flex items-center gap-3">
+          <div className="master-brand-mark"><Shield className="size-5" /></div>
+          <div><p className="stamp text-primary">Terminal de acesso</p><p className="text-xs text-muted-foreground">Universidade Valença · rede privada</p></div>
+        </div>
+        <h1 className="mt-6 text-3xl font-semibold tracking-tight">OPERAÇÃO BERÇO VAZIO</h1>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">Acesso do mestre e terminais individuais em uma única entrada segura.</p>
 
         <form className="mt-8 space-y-4" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
           <div className="space-y-2">
             <Label htmlFor="pin">PIN de acesso</Label>
-            <Input id="pin" autoFocus inputMode="numeric" autoComplete="off" value={code} onChange={(e) => { setCode(e.target.value); setErro(""); }} placeholder="••••••" />
+            <Input id="pin" autoFocus inputMode="numeric" autoComplete="off" value={code} onChange={(e) => { setCode(e.target.value); setErro(""); }} placeholder="••••••" className="h-11 text-base tracking-[.25em]" />
             {(!mounted || !pin) && <p className="text-xs text-muted-foreground">PIN inicial do mestre: <b>333</b>. PINs de jogadores são criados pelo mestre.</p>}
           </div>
-          {erro && <p className="text-sm text-destructive">{erro}</p>}
-          <Button type="submit" className="w-full" disabled={busy}><Lock className="mr-2 size-4" />{busy ? "Verificando…" : "Entrar"}</Button>
+          {erro && <p role="alert" className="rounded-lg border border-destructive/35 bg-destructive/10 p-2.5 text-sm text-destructive">{erro}</p>}
+          <Button type="submit" className="h-11 w-full" disabled={busy}><Lock className="mr-2 size-4" />{busy ? "Verificando…" : "Entrar no terminal"}</Button>
         </form>
 
-        <div className="mt-5 border-t border-border pt-4">
-          <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setEditing((v) => !v)}>{editing ? "Cancelar troca de PIN local" : "Trocar PIN local de emergência do mestre"}</button>
+        <div className="mt-5 border-t border-border/70 pt-4">
+          <button type="button" className="text-xs text-muted-foreground underline decoration-border underline-offset-4 hover:text-foreground" onClick={() => setEditing((v) => !v)}>{editing ? "Cancelar troca de PIN local" : "Trocar PIN local de emergência do mestre"}</button>
           {editing && <div className="mt-3 flex gap-2"><Input inputMode="numeric" value={newPin} onChange={(e) => setNewPin(e.target.value)} placeholder="Novo PIN (3+ dígitos)" /><Button size="sm" variant="outline" onClick={() => { if (newPin.length < 3) { setErro("O novo PIN precisa ter pelo menos 3 dígitos."); return; } setPin(newPin); setNewPin(""); setEditing(false); setErro("PIN local alterado. O Cloud do mestre continua usando 333."); }}>Salvar</Button></div>}
         </div>
-        <p className="mt-5 text-xs text-muted-foreground">{cloudConfigured() ? "Cloud conectado — perfis de player podem entrar por outros aparelhos." : "Modo local ativo — o painel do mestre continua disponível, mas o multiplayer aguarda o Cloud deste build."}</p>
+        <div className="mt-5 flex items-center gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground"><span className={`size-2 rounded-full ${cloudConfigured() ? "bg-route-verde-claro" : "bg-route-amarelo"}`} />{cloudConfigured() ? "Cloud pronto para mestre e players." : "Modo local ativo; multiplayer aguardando Cloud."}</div>
       </div>
     </div>
   );
@@ -116,7 +119,6 @@ export function Shell({ children }: { children: ReactNode }) {
   const { proximo, countdown } = useTimelineStatus();
   const { pace } = useSessionPace();
   const [cloudSync, setCloudSync] = useState<"online" | "offline" | "syncing">(() => cloudConfigured() && getCloudSession()?.role === "MASTER" ? "online" : "offline");
-  // O estado autenticado vem do localStorage; sem este gate o SSR e o cliente divergem e o React descarta a árvore.
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
@@ -148,13 +150,13 @@ export function Shell({ children }: { children: ReactNode }) {
   if (!authed || !hydrated) return <LoginScreen />;
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
+    <div className="master-shell min-h-screen">
+      <header className="master-header sticky top-0 z-40">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-3 py-2.5 sm:px-5 sm:py-3">
-          <div className="shrink-0"><p className="stamp text-primary">Operação Berço Vazio</p><p className="text-sm font-semibold">Painel do Mestre</p></div>
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
-            <span className="rounded-sm bg-primary px-2 py-1 font-semibold text-primary-foreground">DIA {session.day}</span>
-            <span className="font-mono text-base">{session.time}</span>
+          <div className="flex shrink-0 items-center gap-3"><div className="master-brand-mark"><Shield className="size-5" /></div><div><p className="stamp text-primary">Operação Berço Vazio</p><p className="text-sm font-semibold tracking-wide">Painel do Mestre</p></div></div>
+          <div className="master-status-strip flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg px-3 py-1.5 text-xs">
+            <span className="rounded-md border border-primary/35 bg-primary/90 px-2 py-1 font-semibold text-primary-foreground">DIA {session.day}</span>
+            <span className="font-mono text-base font-semibold">{session.time}</span>
             <span className={`stamp ${session.clockRunning ? "text-route-verde-claro" : "text-route-amarelo"}`}>{session.clockRunning ? `rodando ${session.clockSpeed}x` : "pausado"}</span>
             <span className="hidden text-muted-foreground md:inline">Local: <span className="text-foreground">{local?.name ?? "—"}</span></span>
             <span className="hidden text-muted-foreground xl:inline">Cena: <span className="text-foreground">{scene?.title ?? "—"}</span></span>
@@ -162,18 +164,18 @@ export function Shell({ children }: { children: ReactNode }) {
             <span className={`hidden stamp 2xl:inline ${paceTone[pace]}`}>Ritmo: {paceLabel[pace]}</span>
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 text-xs">
-            <span className={`hidden items-center gap-1 xl:flex ${cloudSync === "online" ? "text-route-verde-claro" : cloudSync === "syncing" ? "text-route-amarelo" : "text-muted-foreground"}`}><Save className="size-3.5" /> {cloudSync === "online" ? "Cloud" : cloudSync === "syncing" ? "Sync…" : "Local"}</span>
-            <Link to="/players" className="hidden rounded-sm border border-border px-2 py-1.5 text-xs hover:border-primary sm:inline-flex"><Users className="mr-1 size-3.5" />Players</Link>
+            <span className={`hidden items-center gap-1 rounded-md border border-border/60 px-2 py-1.5 xl:flex ${cloudSync === "online" ? "text-route-verde-claro" : cloudSync === "syncing" ? "text-route-amarelo" : "text-muted-foreground"}`}><Save className="size-3.5" /> {cloudSync === "online" ? "Cloud" : cloudSync === "syncing" ? "Sync…" : "Local"}</span>
+            <Link to="/players" className="hidden rounded-lg border border-border/80 bg-card/30 px-2.5 py-1.5 text-xs hover:border-primary/40 hover:bg-accent/60 sm:inline-flex"><Users className="mr-1 size-3.5" />Players</Link>
             <Button size="sm" variant={simulation ? "destructive" : "outline"} onClick={toggleSimulation}><FlaskConical className="size-3.5 sm:mr-1" /><span className="hidden sm:inline">{simulation ? "Sair da simulação" : "Simulação"}</span></Button>
             <Button size="sm" variant="ghost" onClick={() => { logout(); void logoutCloud(); }}>Sair</Button>
           </div>
         </div>
-        <div className="flex items-center gap-3 overflow-x-auto border-t border-border px-3 py-1.5 sm:px-5"><div className="shrink-0"><ClockControls compact /></div><span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">Ctrl+K para busca rápida</span></div>
-        <nav className="flex flex-nowrap gap-1 overflow-x-auto border-t border-border px-3 py-1.5 sm:px-5 [scrollbar-width:thin]">{NAV.map((n) => <Link key={n.to} to={n.to} className={cn("shrink-0 rounded-sm px-3 py-1.5 text-xs transition-colors", pathname === n.to ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>{n.label}</Link>)}</nav>
+        <div className="flex items-center gap-3 overflow-x-auto border-t border-border/70 px-3 py-1.5 sm:px-5"><div className="shrink-0"><ClockControls compact /></div><span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">Ctrl+K · busca rápida</span></div>
+        <nav className="master-nav flex flex-nowrap overflow-x-auto border-t border-border/70 px-3 py-1.5 sm:px-5 [scrollbar-width:thin]">{NAV.map((n) => <Link key={n.to} to={n.to} data-active={pathname === n.to ? "true" : "false"} className={cn("shrink-0 px-3 py-1.5 text-xs", pathname === n.to ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>{n.label}</Link>)}</nav>
         {simulation && <div className="bg-destructive/20 px-3 py-1 text-center text-xs text-destructive-foreground sm:px-5">MODO SIMULAÇÃO ATIVO — nada aqui altera a sessão real. Ao sair, o estado anterior é restaurado.</div>}
       </header>
       <div className="px-3 pt-3 sm:px-5"><EventAlert /></div>
-      <main className="px-3 py-4 sm:px-5 sm:py-6">{children}</main>
+      <main className="master-main px-3 py-4 sm:px-5 sm:py-6">{children}</main>
       <CommandPalette />
     </div>
   );
