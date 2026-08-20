@@ -12,12 +12,14 @@ export function MapAreaManager() {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<MasterDashboardData | null>(null);
   const [busyId, setBusyId] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const refresh = useCallback(async () => {
     const token = requireMasterToken();
     if (!token || !cloudConfigured()) return null;
+    setRefreshing(true);
     try {
       const result = await rpc<MasterDashboardData>("master_dashboard", { p_token: token });
       if (!result.ok) throw new Error(result.error || "Falha ao carregar áreas do mapa.");
@@ -27,6 +29,8 @@ export function MapAreaManager() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao carregar áreas do mapa.");
       return null;
+    } finally {
+      setRefreshing(false);
     }
   }, []);
 
@@ -42,7 +46,7 @@ export function MapAreaManager() {
   if (pathname !== "/mapa" || !requireMasterToken()) return null;
 
   const remove = async (floor: string, locationId: string) => {
-    if (!confirm("EXCLUIR esta área de forma permanente? Ela também será removida do mapa de todos os players.")) return;
+    if (!confirm("Excluir esta área permanentemente? Ela também será removida do mapa dos players.")) return;
     const token = requireMasterToken();
     if (!token) return;
     setBusyId(locationId);
@@ -56,15 +60,14 @@ export function MapAreaManager() {
       });
       if (result?.ok === false) throw new Error(result.error || "Falha ao excluir a área.");
 
-      // Não confia apenas no retorno do RPC: confirma no dashboard que saiu de verdade.
       const dashboard = await rpc<MasterDashboardData>("master_dashboard", { p_token: token });
       if (!dashboard.ok) throw new Error(dashboard.error || "Não foi possível confirmar a exclusão.");
       const stillExists = (dashboard.mapRegions ?? []).some((region) => region.floor === floor && regionLocationId(region) === locationId);
       if (stillExists) throw new Error("O Cloud respondeu, mas a área continuou salva. Tente novamente.");
 
       setData(dashboard);
-      setNotice("Área EXCLUÍDA de verdade. Ela também foi removida das liberações dos players.");
-      window.setTimeout(() => window.location.reload(), 350);
+      setNotice("Área excluída do Cloud e das liberações dos players.");
+      window.setTimeout(() => window.location.reload(), 450);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao excluir a área.");
     } finally {
@@ -73,18 +76,17 @@ export function MapAreaManager() {
   };
 
   return (
-    // Fica no rodapé para não cobrir a navegação, o cabeçalho do mapa nem o painel "Liberar área".
-    <div className="fixed bottom-4 right-4 z-[80] w-[min(420px,calc(100vw-2rem))]">
+    <div className="fixed bottom-4 right-4 z-[80] w-[min(390px,calc(100vw-2rem))]">
       {open && (
-        <div className="mb-2 max-h-[70vh] overflow-y-auto rounded-sm border-2 border-destructive/70 bg-background/98 p-3 shadow-2xl backdrop-blur">
+        <div className="mb-2 max-h-[62vh] overflow-y-auto rounded-md border border-border bg-background/97 p-3 shadow-2xl backdrop-blur-xl">
           <div className="mb-3 flex items-start justify-between gap-2">
             <div>
-              <p className="stamp text-destructive">EXCLUIR ÁREAS DO MAPA</p>
-              <p className="text-sm font-semibold">Áreas desenhadas pelo mestre</p>
-              <p className="text-[11px] text-muted-foreground">O botão vermelho apaga a área do Cloud e remove a liberação dos players.</p>
+              <p className="stamp text-primary">GERENCIAR ÁREAS</p>
+              <p className="text-sm font-semibold">Fog of War salvo no Cloud</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">Exclua somente áreas que não devem mais existir. A ação também remove as liberações dos players.</p>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => void refresh()} title="Atualizar lista">
-              <RefreshCw className="size-4" />
+            <Button size="sm" variant="ghost" disabled={refreshing || !!busyId} onClick={() => void refresh()} title="Atualizar lista">
+              <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
           </div>
 
@@ -97,32 +99,39 @@ export function MapAreaManager() {
               const floor = region.floor as FloorId;
               const floorLabel = MAP_IMAGES[floor]?.label ?? region.floor;
               return (
-                <div key={region.id ?? id} className="flex items-center gap-2 rounded-sm border border-border bg-card/70 p-2">
+                <div key={region.id ?? id} className="flex items-center gap-2 rounded-sm border border-border bg-card/45 p-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold">Área {index + 1} · {floorLabel}</p>
-                    <p className="font-mono text-[9px] text-muted-foreground">x {Number(region.x).toFixed(1)} · y {Number(region.y).toFixed(1)} · {Number(region.width).toFixed(1)} × {Number(region.height).toFixed(1)}%</p>
+                    <p className="mt-0.5 font-mono text-[9px] text-muted-foreground">x {Number(region.x).toFixed(1)} · y {Number(region.y).toFixed(1)} · {Number(region.width).toFixed(1)} × {Number(region.height).toFixed(1)}%</p>
                   </div>
                   <Button
                     size="sm"
-                    variant="destructive"
-                    disabled={busyId === id}
+                    variant="ghost"
+                    className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={!!busyId}
                     onClick={() => void remove(region.floor, id)}
                   >
                     <Trash2 className="mr-1 size-3.5" />
-                    {busyId === id ? "Excluindo…" : "EXCLUIR"}
+                    {busyId === id ? "Excluindo…" : "Excluir"}
                   </Button>
                 </div>
               );
             })}
-            {!areas.length && <p className="rounded-sm border border-dashed border-border p-3 text-center text-xs text-muted-foreground">Nenhuma área manual salva.</p>}
+            {!areas.length && <p className="rounded-sm border border-dashed border-border p-3 text-center text-xs text-muted-foreground">Nenhuma área manual salva no Cloud.</p>}
           </div>
         </div>
       )}
 
-      <Button className="ml-auto flex shadow-2xl" variant="destructive" onClick={() => setOpen((value) => !value)}>
-        <Trash2 className="mr-2 size-4" />
-        {open ? "Fechar exclusão" : "EXCLUIR ÁREAS"}
-        {open ? <ChevronUp className="ml-2 size-4" /> : <ChevronDown className="ml-2 size-4" />}
+      <Button
+        className="ml-auto flex border-border/80 bg-background/95 shadow-xl backdrop-blur hover:bg-accent"
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <Trash2 className="mr-1.5 size-3.5 text-destructive" />
+        Áreas do mapa
+        <span className="ml-1.5 rounded-full bg-secondary px-1.5 py-0.5 font-mono text-[10px]">{areas.length}</span>
+        {open ? <ChevronUp className="ml-1.5 size-3.5" /> : <ChevronDown className="ml-1.5 size-3.5" />}
       </Button>
     </div>
   );
