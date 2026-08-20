@@ -11,8 +11,16 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
   const [floor, setFloor] = useState<FloorId>("primeiro");
   const [imageReady, setImageReady] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [sharedAssetFailed, setSharedAssetFailed] = useState(false);
+
   const asset = (key: string) => assets.find(a => (a.assetKey ?? a.asset_key) === key)?.publicUrl ?? assets.find(a => (a.assetKey ?? a.asset_key) === key)?.public_url;
-  const image = asset(`map:${floor}:limpo`) || MAP_IMAGES[floor].limpo;
+  const sharedImage = asset(`map:${floor}:limpo`) ?? "";
+  const usingSharedImage = !!sharedImage && !sharedAssetFailed;
+  const image = usingSharedImage ? sharedImage : MAP_IMAGES[floor].limpo;
+
+  useEffect(() => {
+    setSharedAssetFailed(false);
+  }, [floor, sharedImage]);
 
   useEffect(() => {
     setImageReady(false);
@@ -71,6 +79,15 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
     return sw > 0 && sh > 0 ? [{ id: regionLocationId(region) || region.id || `${sx}-${sy}`, x: sx, y: sy, width: sw, height: sh }] : [];
   }), [openRegions]);
 
+  const handleImageError = () => {
+    setImageReady(false);
+    if (usingSharedImage) {
+      setSharedAssetFailed(true);
+      return;
+    }
+    setImageFailed(true);
+  };
+
   return <section className="space-y-4">
     <div className="flex flex-wrap items-center gap-2">
       <div>
@@ -93,7 +110,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
         className="block w-full select-none opacity-0"
         draggable={false}
         onLoad={() => { setImageReady(true); setImageFailed(false); }}
-        onError={() => { setImageReady(false); setImageFailed(true); }}
+        onError={handleImageError}
       />
 
       {imageReady && safeRegions.map(region => (
@@ -127,7 +144,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-amber-300">
           <AlertTriangle className="size-10" />
           <p className="mt-3 font-semibold">A planta deste piso está indisponível</p>
-          <p className="mt-1 max-w-lg text-xs text-zinc-400">A revelação foi preservada no Cloud. Quando a planta voltar a carregar, as áreas liberadas reaparecem na posição correta.</p>
+          <p className="mt-1 max-w-lg text-xs text-zinc-400">A revelação foi preservada no Cloud. O terminal tentou primeiro a imagem compartilhada pelo mestre e depois a planta padrão; quando uma delas voltar a carregar, as áreas reaparecem na posição correta.</p>
         </div>
       )}
 
@@ -143,7 +160,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <Eye className="size-3.5" />
       <span>{safeRegions.length} área(s) visível(is) neste piso.</span>
-      {imageReady && <span className="text-route-verde-claro">· planta carregada</span>}
+      {imageReady && <span className="text-route-verde-claro">· planta carregada{sharedImage && sharedAssetFailed ? " pelo fallback local" : ""}</span>}
     </div>
   </section>;
 }
