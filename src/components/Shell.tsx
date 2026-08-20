@@ -114,6 +114,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const { proximo, countdown } = useTimelineStatus();
   const { pace } = useSessionPace();
   const [cloudSync, setCloudSync] = useState<"online" | "offline" | "syncing">(() => cloudConfigured() && getCloudSession()?.role === "MASTER" ? "online" : "offline");
+  // O estado autenticado vem do localStorage; sem este gate o SSR e o cliente divergem e o React descarta a árvore.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
 
   const scene = SCENES.find((s) => s.id === session.currentSceneId);
   const local = LOCATIONS.find((l) => l.id === session.currentLocationId);
