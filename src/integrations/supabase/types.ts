@@ -274,6 +274,44 @@ export type Database = {
         }
         Relationships: []
       }
+      media_broadcasts: {
+        Row: {
+          active: boolean
+          caption: string
+          created_at: string
+          id: string
+          image_data: string
+          target_player_id: string | null
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          caption?: string
+          created_at?: string
+          id?: string
+          image_data: string
+          target_player_id?: string | null
+          title?: string
+        }
+        Update: {
+          active?: boolean
+          caption?: string
+          created_at?: string
+          id?: string
+          image_data?: string
+          target_player_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_broadcasts_target_player_id_fkey"
+            columns: ["target_player_id"]
+            isOneToOne: false
+            referencedRelation: "player_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string
@@ -501,7 +539,16 @@ export type Database = {
         Args: { p_role: string; p_token: string }
         Returns: Json
       }
+      master_clear_all_media: { Args: { p_token: string }; Returns: Json }
+      master_clear_media: {
+        Args: { p_media_id: string; p_token: string }
+        Returns: Json
+      }
       master_dashboard: { Args: { p_token: string }; Returns: Json }
+      master_delete_map_region: {
+        Args: { p_floor: string; p_location_id: string; p_token: string }
+        Returns: Json
+      }
       master_delete_player: {
         Args: { p_player_id: string; p_token: string }
         Returns: Json
@@ -518,6 +565,7 @@ export type Database = {
         Args: { p_player_id: string; p_token: string }
         Returns: Json
       }
+      master_list_media: { Args: { p_token: string }; Returns: Json }
       master_login: { Args: { p_pin: string }; Returns: Json }
       master_revoke_delivery: {
         Args: { p_delivery_id: string; p_kind: string; p_token: string }
@@ -525,6 +573,16 @@ export type Database = {
       }
       master_save_player_sheet: {
         Args: { p_data: Json; p_player_id: string; p_token: string }
+        Returns: Json
+      }
+      master_send_media: {
+        Args: {
+          p_caption: string
+          p_image_data: string
+          p_targets: string[]
+          p_title: string
+          p_token: string
+        }
         Returns: Json
       }
       master_send_notification: {
@@ -580,6 +638,10 @@ export type Database = {
       player_login: { Args: { p_pin: string }; Returns: Json }
       player_mark_notification: {
         Args: { p_notification_id: string; p_token: string }
+        Returns: Json
+      }
+      player_media_feed: {
+        Args: { p_known_ids?: string[]; p_token: string }
         Returns: Json
       }
       player_save_note: {
