@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cloudConfigured, requireMasterToken, rpc } from "@/lib/cloud";
@@ -15,10 +15,13 @@ export function MapAreaManager() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const refreshInFlight = useRef(false);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlight.current) return null;
     const token = requireMasterToken();
     if (!token || !cloudConfigured()) return null;
+    refreshInFlight.current = true;
     setRefreshing(true);
     try {
       const result = await rpc<MasterDashboardData>("master_dashboard", { p_token: token });
@@ -30,6 +33,7 @@ export function MapAreaManager() {
       setError(err instanceof Error ? err.message : "Falha ao carregar áreas do mapa.");
       return null;
     } finally {
+      refreshInFlight.current = false;
       setRefreshing(false);
     }
   }, []);
@@ -85,7 +89,7 @@ export function MapAreaManager() {
               <p className="text-sm font-semibold">Fog of War salvo no Cloud</p>
               <p className="mt-0.5 text-[11px] text-muted-foreground">Exclua somente áreas que não devem mais existir. A ação também remove as liberações dos players.</p>
             </div>
-            <Button size="sm" variant="ghost" disabled={refreshing || !!busyId} onClick={() => void refresh()} title="Atualizar lista">
+            <Button size="sm" variant="ghost" disabled={refreshing || !!busyId} onClick={() => void refresh()} title="Atualizar lista" aria-label="Atualizar áreas do mapa">
               <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />
             </Button>
           </div>
