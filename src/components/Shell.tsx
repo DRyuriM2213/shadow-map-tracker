@@ -140,7 +140,7 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [authed, session.day, session.time, session.currentLocationId, local?.name]);
 
-  if (!authed) return <LoginScreen />;
+  if (!authed || !hydrated) return <LoginScreen />;
 
   return (
     <div className="min-h-screen">
