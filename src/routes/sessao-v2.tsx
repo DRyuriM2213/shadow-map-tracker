@@ -72,7 +72,7 @@ function SessionCockpit() {
   const [narration, setNarration] = useState<Narration>(() => ({
     kind: "ABERTURA",
     label: "Ponto atual da campanha",
-    text: "A sessão anterior terminou por volta das 21h de terça-feira. Sofia, Adolfo, Jade e Vitor Hugo estavam entrando na Universidade Valença para investigar o campus à noite. O primeiro alvo ainda é escolha deles.",
+    text: guide.now,
   }));
   const [history, setHistory] = useState<Narration[]>([]);
   const [pinned, setPinned] = useState(false);
@@ -164,7 +164,7 @@ function SessionCockpit() {
 
   const openEvent = (id: string) => {
     const ev = V3_EVENTS.find((e) => e.id === id);
-    if (!ev) return;
+    if (!ev || pinned) return;
     store.activateEvent(id, "ativar");
     useNarration(
       {
@@ -177,7 +177,7 @@ function SessionCockpit() {
   };
 
   const applyGeneric = () => {
-    if (!genericResult) return;
+    if (!genericResult || pinned) return;
     useNarration({ kind: "RESULTADO", label: genericResult, text: GENERIC_TEST_RESULTS[genericResult] });
     store.logAction("teste-improvisado", genericResult, `${situation} em ${location?.name ?? "local"}`);
   };
@@ -198,6 +198,13 @@ function SessionCockpit() {
                 onClick={() => {
                   store.createCheckpoint("Antes do recap da Sessão 1");
                   store.applySessionOneRecap();
+                  setPinned(false);
+                  setHistory((h) => [...h.slice(-14), narration]);
+                  setNarration({
+                    kind: "ABERTURA",
+                    label: "Ponto atual da campanha",
+                    text: GUIDE_BY_DAY[2].now,
+                  });
                 }}
               >
                 Aplicar recap da Sessão 1
@@ -276,6 +283,7 @@ function SessionCockpit() {
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={pinned}
                       onClick={() => {
                         const prev = history.at(-1);
                         if (!prev || pinned) return;
@@ -300,7 +308,7 @@ function SessionCockpit() {
               </div>
               {pinned && (
                 <p className="mt-2 text-xs text-primary">
-                  Texto fixado. Mudar de sala continua funcionando sem substituir esta narração.
+                  Texto fixado. Mudar de sala continua funcionando sem substituir esta narração; ações que trocam o texto ficam bloqueadas até desfixar.
                 </p>
               )}
             </section>
@@ -327,7 +335,7 @@ function SessionCockpit() {
                     <p className="stamp text-muted-foreground">Ações rápidas neste local</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {location.actions.map((a) => (
-                        <Button key={a} size="sm" variant="outline" onClick={() => runLocationAction(a)}>
+                        <Button key={a} size="sm" variant="outline" disabled={pinned} onClick={() => runLocationAction(a)}>
                           {a}
                         </Button>
                       ))}
@@ -412,7 +420,7 @@ function SessionCockpit() {
                 <Button size="sm" onClick={generateImprov}>
                   <Sparkles className="mr-1 size-3.5" /> Gerar base
                 </Button>
-                <Button size="sm" variant="secondary" onClick={useDraft}>Usar na narração</Button>
+                <Button size="sm" variant="secondary" disabled={pinned} onClick={useDraft}>Usar na narração</Button>
                 <Button size="sm" variant="outline" onClick={() => setDraft("")}>Limpar</Button>
               </div>
 
@@ -434,7 +442,7 @@ function SessionCockpit() {
                     <option value="">Escolha o resultado…</option>
                     {Object.keys(GENERIC_TEST_RESULTS).map((r) => <option key={r}>{r}</option>)}
                   </select>
-                  <Button size="sm" variant="outline" disabled={!genericResult} onClick={applyGeneric}>
+                  <Button size="sm" variant="outline" disabled={!genericResult || pinned} onClick={applyGeneric}>
                     Narrar resultado
                   </Button>
                 </div>
@@ -481,8 +489,9 @@ function SessionCockpit() {
                 {relevantEvents.map((ev) => (
                   <button
                     key={ev.id}
+                    disabled={pinned}
                     onClick={() => openEvent(ev.id)}
-                    className="w-full rounded-sm border border-border p-2.5 text-left hover:border-primary"
+                    className="w-full rounded-sm border border-border p-2.5 text-left hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <span className="flex items-center gap-2 text-xs">
                       <Clock3 className="size-3.5" />
@@ -753,15 +762,26 @@ function GuideCard({ title, text }: { title: string; text: string }) {
 }
 
 function Drawer({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/65" onClick={onClose}>
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="ml-auto h-full w-full max-w-2xl overflow-y-auto border-l border-border bg-background p-4 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl">{title}</h2>
-          <Button size="sm" variant="ghost" onClick={onClose}><X className="size-4" /></Button>
+          <Button size="sm" variant="ghost" aria-label="Fechar painel" onClick={onClose}><X className="size-4" /></Button>
         </div>
         {children}
       </aside>
