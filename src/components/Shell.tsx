@@ -39,6 +39,8 @@ function LoginScreen() {
   const [editing, setEditing] = useState(false);
   const [erro, setErro] = useState("");
   const [busy, setBusy] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const expected = pin || "333";
 
   const submit = async () => {
