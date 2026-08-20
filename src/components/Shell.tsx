@@ -129,7 +129,7 @@ export function Shell({ children }: { children: ReactNode }) {
     if (!token) return;
     setCloudSync("syncing");
     const timer = window.setTimeout(() => {
-      void rpc<{ ok: boolean }>("master_sync_public_state", {
+      void rpc<{ ok: boolean; error?: string }>("master_sync_public_state", {
         p_token: token,
         p_payload: {
           day: session.day,
@@ -137,7 +137,10 @@ export function Shell({ children }: { children: ReactNode }) {
           currentLocationId: session.currentLocationId ?? "",
           currentLocationName: local?.name ?? "",
         },
-      }).then(() => setCloudSync("online")).catch(() => setCloudSync("offline"));
+      }).then((result) => {
+        if (!result.ok) throw new Error(result.error || "Falha ao sincronizar o estado público");
+        setCloudSync("online");
+      }).catch(() => setCloudSync("offline"));
     }, 650);
     return () => window.clearTimeout(timer);
   }, [authed, session.day, session.time, session.currentLocationId, local?.name]);
