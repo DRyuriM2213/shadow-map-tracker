@@ -9,7 +9,7 @@ import { ChevronDown, ChevronUp, RefreshCw, Trash2 } from "lucide-react";
 
 export function MapAreaManager() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [data, setData] = useState<MasterDashboardData | null>(null);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -32,7 +32,6 @@ export function MapAreaManager() {
 
   useEffect(() => {
     if (pathname !== "/mapa" || !requireMasterToken()) return;
-    setOpen(true);
     void refresh();
   }, [pathname, refresh]);
 
@@ -74,7 +73,8 @@ export function MapAreaManager() {
   };
 
   return (
-    <div className="fixed right-4 top-24 z-[9999] w-[min(420px,calc(100vw-2rem))]">
+    // Fica no rodapé para não cobrir a navegação, o cabeçalho do mapa nem o painel "Liberar área".
+    <div className="fixed bottom-4 right-4 z-[80] w-[min(420px,calc(100vw-2rem))]">
       {open && (
         <div className="mb-2 max-h-[70vh] overflow-y-auto rounded-sm border-2 border-destructive/70 bg-background/98 p-3 shadow-2xl backdrop-blur">
           <div className="mb-3 flex items-start justify-between gap-2">
