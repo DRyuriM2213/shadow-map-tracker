@@ -79,13 +79,12 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
         <p className="text-xs text-muted-foreground">Somente as áreas desenhadas e liberadas pelo mestre aparecem. Novas áreas chegam automaticamente.</p>
       </div>
       <div className="ml-auto flex gap-2">
-        <Button size="sm" variant={floor === "primeiro" ? "default" : "outline"} onClick={() => setFloor("primeiro")}>Primeiro andar</Button>
+        <Button size="sm" variant={floor === "primeiro" ? "default" : "outline"} onClick={() => setFloor("primeiro")}>Térreo</Button>
         <Button size="sm" variant={floor === "superior" ? "default" : "outline"} onClick={() => setFloor("superior")}>Andar superior</Button>
       </div>
     </div>
 
     <div className="relative min-h-[360px] overflow-hidden rounded-sm border border-border bg-black shadow-2xl">
-      {/* Esta imagem invisível define exatamente o tamanho/proporção do mapa. */}
       <img
         key={`sizer-${floor}-${image}`}
         src={image}
@@ -97,11 +96,6 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
         onError={() => { setImageReady(false); setImageFailed(true); }}
       />
 
-      {/*
-        Fog sem SVG/mask/clip-path: cada área é uma janela com overflow hidden.
-        Dentro dela existe uma cópia da planta inteira reposicionada para mostrar
-        exatamente o trecho correspondente às coordenadas percentuais.
-      */}
       {imageReady && safeRegions.map(region => (
         <div
           key={`${floor}-${region.id}`}
@@ -132,8 +126,8 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
       {imageFailed && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-amber-300">
           <AlertTriangle className="size-10" />
-          <p className="mt-3 font-semibold">A imagem do mapa não carregou neste dispositivo</p>
-          <p className="mt-1 max-w-lg text-xs text-zinc-400">Avise o mestre: o arquivo da planta precisa ser disponibilizado pelo site. Isso não é uma área oculta do fog.</p>
+          <p className="mt-3 font-semibold">A planta deste piso está indisponível</p>
+          <p className="mt-1 max-w-lg text-xs text-zinc-400">A revelação foi preservada no Cloud. Quando a planta voltar a carregar, as áreas liberadas reaparecem na posição correta.</p>
         </div>
       )}
 
