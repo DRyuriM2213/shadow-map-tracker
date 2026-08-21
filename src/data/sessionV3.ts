@@ -223,7 +223,7 @@ export const GUIDE_BY_DAY: Record<CampaignDay, { now: string; ifTheyGo: string; 
     contingency: "Se algo antigo for necessário, entregue por fonte redundante sem apagar o cânone da mesa.",
   },
   2: {
-    now: "21h: Sofia, Adolfo, Jade e Vitor Hugo iniciam a invasão noturna. Comece perguntando qual setor querem atingir primeiro e mostre atalhos de locais.",
+    now: "21h: Sofia, Adolfo, Jade e Vitor Hugo iniciam a invasão noturna e Percy aparece como NPC para entrar junto. Comece perguntando qual setor querem atingir primeiro e mostre atalhos de locais.",
     ifTheyGo: "Segurança = câmeras/acessos; Secretaria = crachá/Wi-Fi/convocações; Arquivo = Ricardo/reforma; Química = HF; Manutenção = setor apagado/Bloco C.",
     events: "Ronda após 22h, danos das portas chamando atenção e qualquer registro digital gerado pela invasão.",
     pending: "Priorize pelo menos uma linha concreta nova. Não exija que encontrem todas na mesma noite.",
