@@ -1,3 +1,6 @@
+import { emptyProgression, normalizeProgression, PROGRESSION_VERSION, type ProgressionState, type RitualElement } from "@/data/ordemProgression";
+import { findRitualByLegacyCard } from "@/data/rituals";
+
 export type OrdemAttribute = "AGI" | "FOR" | "INT" | "PRE" | "VIG";
 export type TrainingLevel = "DESTREINADO" | "TREINADO" | "VETERANO" | "EXPERT";
 
@@ -29,36 +32,91 @@ const SKILL_ROWS: Array<[string, string, OrdemAttribute]> = [
 ];
 export const SKILLS: SkillDefinition[] = SKILL_ROWS.map(([id, name, attribute]) => ({ id, name, attribute }));
 
+export const SHEET_VERSION = 2;
+
 export interface CharacterSheetData {
+  sheetVersion: number;
   identity: { name: string; age: string; appearance: string; avatarUrl: string; personality: string; history: string; objective: string; };
   concept: { origin: string; className: "Combatente" | "Especialista" | "Ocultista" | "Custom"; customClass: string; trail: string; nex: number; rank: string; movement: number; pePerRound: number; freeMode: boolean; };
   attributes: Record<OrdemAttribute, number>;
   resources: { pv: number; pvMax: number; pe: number; peMax: number; san: number; sanMax: number; defense: number; protection: string; resistances: string; load: number; loadMax: number; credit: string; prestige: number; };
   skills: Record<string, { training: TrainingLevel; otherBonus: number; customName?: string }>;
   attacks: Array<{ id: string; name: string; attribute: OrdemAttribute; skillId: string; bonus: number; damage: string; criticalMargin: number; criticalMultiplier: number; range: string; special: string; ammo: string; }>;
+  /** Cards livres antigos continuam existindo e nunca são apagados pela migração. */
   abilities: Array<{ id: string; name: string; costPe: number; type: string; circle: string; element: string; summary: string; }>;
   inventory: Array<{ id: string; name: string; category: string; spaces: number; quantity: number; equipped: boolean; notes: string; }>;
+  progression: ProgressionState;
 }
 
 export function emptyCharacterSheet(): CharacterSheetData {
   return {
+    sheetVersion: SHEET_VERSION,
     identity: { name: "", age: "", appearance: "", avatarUrl: "", personality: "", history: "", objective: "" },
     concept: { origin: "", className: "Custom", customClass: "", trail: "", nex: 5, rank: "", movement: 9, pePerRound: 1, freeMode: false },
     attributes: { AGI: 1, FOR: 1, INT: 1, PRE: 1, VIG: 1 },
     resources: { pv: 0, pvMax: 0, pe: 0, peMax: 0, san: 0, sanMax: 0, defense: 10, protection: "", resistances: "", load: 0, loadMax: 0, credit: "", prestige: 0 },
-    skills: Object.fromEntries(SKILLS.map((s) => [s.id, { training: "DESTREINADO" as TrainingLevel, otherBonus: 0 }])),
-    attacks: [], abilities: [], inventory: [],
+    skills: Object.fromEntries(SKILLS.map((skill) => [skill.id, { training: "DESTREINADO" as TrainingLevel, otherBonus: 0 }])),
+    attacks: [], abilities: [], inventory: [], progression: emptyProgression(),
   };
 }
 
+function migrateLegacyRitualCards(
+  abilities: CharacterSheetData["abilities"],
+  progression: ProgressionState,
+): ProgressionState {
+  const existingRitualIds = new Set(progression.knownRituals.map((ritual) => ritual.ritualId).filter(Boolean));
+  const existingLegacyIds = new Set(progression.knownRituals.map((ritual) => ritual.id));
+  const migrated = [...progression.knownRituals];
+
+  for (const ability of abilities) {
+    if (!ability.name.trim() || existingLegacyIds.has(`legacy-${ability.id}`)) continue;
+    const ritual = findRitualByLegacyCard(ability.name, ability.element);
+    if (!ritual || existingRitualIds.has(ritual.id)) continue;
+    migrated.push({
+      id: `legacy-${ability.id}`,
+      ritualId: ritual.id,
+      name: ritual.name,
+      element: ritual.element as RitualElement,
+      circle: ritual.circle,
+      legacy: true,
+      note: ability.summary || "Migrado de um card antigo da ficha.",
+    });
+    existingRitualIds.add(ritual.id);
+  }
+
+  return { ...progression, version: PROGRESSION_VERSION, knownRituals: migrated };
+}
+
+/**
+ * Migração não destrutiva: fichas antigas continuam abrindo, cards livres são
+ * preservados e somente rituais reconhecidos ganham também uma entrada estruturada.
+ */
 export function normalizeSheet(input: unknown): CharacterSheetData {
   const base = emptyCharacterSheet();
   if (!input || typeof input !== "object") return base;
   const data = input as Partial<CharacterSheetData>;
-  return { ...base, ...data, identity: { ...base.identity, ...(data.identity ?? {}) }, concept: { ...base.concept, ...(data.concept ?? {}) }, attributes: { ...base.attributes, ...(data.attributes ?? {}) }, resources: { ...base.resources, ...(data.resources ?? {}) }, skills: { ...base.skills, ...(data.skills ?? {}) }, attacks: Array.isArray(data.attacks) ? data.attacks : [], abilities: Array.isArray(data.abilities) ? data.abilities : [], inventory: Array.isArray(data.inventory) ? data.inventory : [] };
+  const abilities = Array.isArray(data.abilities) ? data.abilities : [];
+  const progression = migrateLegacyRitualCards(abilities, normalizeProgression(data.progression));
+  return {
+    ...base,
+    ...data,
+    sheetVersion: SHEET_VERSION,
+    identity: { ...base.identity, ...(data.identity ?? {}) },
+    concept: { ...base.concept, ...(data.concept ?? {}) },
+    attributes: { ...base.attributes, ...(data.attributes ?? {}) },
+    resources: { ...base.resources, ...(data.resources ?? {}) },
+    skills: { ...base.skills, ...(data.skills ?? {}) },
+    attacks: Array.isArray(data.attacks) ? data.attacks : [],
+    abilities,
+    inventory: Array.isArray(data.inventory) ? data.inventory : [],
+    progression,
+  };
 }
 
 export function creationPointsUsed(attributes: Record<OrdemAttribute, number>) {
-  const values = Object.values(attributes); const zeros = values.filter((v) => v === 0).length; const spent = values.reduce((sum, v) => sum + Math.max(0, v - 1), 0); const budget = 4 + Math.min(1, zeros);
-  return { spent, budget, valid: zeros <= 1 && values.every((v) => v >= 0 && v <= 3) && spent <= budget };
+  const values = Object.values(attributes);
+  const zeros = values.filter((value) => value === 0).length;
+  const spent = values.reduce((sum, value) => sum + Math.max(0, value - 1), 0);
+  const budget = 4 + Math.min(1, zeros);
+  return { spent, budget, valid: zeros <= 1 && values.every((value) => value >= 0 && value <= 3) && spent <= budget };
 }
