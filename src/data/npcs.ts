@@ -329,6 +329,42 @@ export const NPCS: NpcDef[] = [
       },
     ],
   }),
+
+  base("percy", "Percy", "Investigador(a) com missão própria — agora NPC do mestre", {
+    locationIds: ["l-saida-principal", "l-recepcao", "l-patio", "l-corredores"],
+    schedule: "Aparece no início da invasão noturna da Universidade Valença e acompanha o grupo enquanto o mestre quiser.",
+    personality: ["reservado", "objetivo"],
+    voice: "Fala pouco, direto ao ponto, sem explicar de onde vem a informação.",
+    knows: ["Tudo que Percy já sabia enquanto era personagem de jogador; esse histórico permanece válido."],
+    doesNotKnow: [`O que o mestre ainda não definiu permanece ${NAO_DEFINIDO}.`],
+    secrets: ["A missão secreta que Percy já possuía continua existindo e agora é material exclusivo do mestre. Não inventar objetivos, poderes ou revelações novas."],
+    relations: ["Junta-se a Sofia, Adolfo, Jade Nogueira e Vitor Hugo Nogueira no início da invasão noturna."],
+    initialAttitude: "Chega por conta própria, se oferece para entrar junto e não explica motivos sem ser pressionado.",
+    masterNotes:
+      "Percy deixou de ser PJ (Andy saiu da campanha). O painel PODE sugerir falas e reações para Percy, porque ele é NPC. Nunca gerar fala, decisão ou sentimento para Augusto, Sofia, Adolfo ou Amelie. Preservar o histórico anterior de Percy sem reescrever fatos.",
+    topics: [
+      {
+        id: "chegada-invasao",
+        label: "Chegada na invasão",
+        says: "Eu sabia que vocês viriam hoje. Se vão entrar de qualquer jeito, é melhor entrarem comigo junto.",
+        master: "Gancho de entrada no ponto de continuação. Não force aceitação: o grupo decide se aceita Percy.",
+      },
+      {
+        id: "motivo",
+        label: "Por que está aqui",
+        says: "Tenho o meu motivo. Ele não atrapalha o de vocês.",
+        master: "Manter a missão secreta em aberto. Só revelar o que o mestre decidir revelar na mesa.",
+        test: "Intuição",
+        dc: 15,
+      },
+      {
+        id: "apoio",
+        label: "Apoio na investigação",
+        says: "Se abrirem caminho, eu cubro a saída. Prefiro não deixar registro da gente aqui dentro.",
+        master: "Percy pode ajudar operacionalmente sem resolver a cena. Não usar Percy para entregar pista obrigatória de graça.",
+      },
+    ],
+  }),
 ];
 
 export function npcsForLocation(locationId?: string) {

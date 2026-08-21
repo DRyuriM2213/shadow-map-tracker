@@ -3,7 +3,8 @@ import type { CampaignLocation, Clue } from "@/lib/types";
 /**
  * PASSADA DE CONTEÚDO 1 — cômodos reais dos mapas e evidências/documentos do campus.
  * Nada aqui altera cenas, timeline ou conteúdo já existente dos Dias 1–2.
- * Cânone: Augusto (Guilherme), Sofia (Luiz), Amelie (Thaissa), Percy (Andy).
+ * Cânone: Augusto (Guilherme), Sofia (Luiz), Adolfo (Vitor), Amelie (Thaissa).
+ * Percy é NPC do mestre; Andy não participa mais.
  * Alice não existe. Vítima histórica = "Sofia Mendes".
  */
 

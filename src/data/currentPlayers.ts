@@ -37,13 +37,21 @@ export const CURRENT_PLAYERS: Player[] = [
     notes: "Personagem de jogador. Thaissa nunca é tratada como NPC.",
     isPending: false,
   },
+];
+
+/**
+ * Percy NÃO é mais PJ. Andy saiu da campanha. Percy passou a ser NPC controlado
+ * pelo mestre (ver src/data/npcs.ts, id "percy"). Mantido aqui apenas como aviso
+ * para qualquer UI legada que ainda espere encontrá-lo na lista de players.
+ */
+export const FORMER_PLAYERS: Player[] = [
   {
     id: "p-percy",
-    playerName: "Andy",
+    playerName: "Andy (fora da campanha)",
     characterName: "Percy",
-    role: "Investigadora com missão secreta",
-    status: "Ativo",
-    notes: "Personagem de jogador. Andy e Percy não são pessoas separadas. A missão da Ordem permanece privada conforme as informações já entregues à jogadora.",
+    role: "Agora NPC controlado pelo mestre",
+    status: "Encerrado como PJ",
+    notes: "Percy deixou de ser personagem de jogador. Histórico, conhecimentos e missão secreta continuam válidos, mas agora são material exclusivo do mestre. Ele reaparece como NPC no início da invasão noturna.",
     isPending: false,
   },
 ];

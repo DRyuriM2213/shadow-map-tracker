@@ -49,16 +49,6 @@ export const PLAYERS: Player[] = [
     isPending: false,
   },
   {
-    id: "p-percy",
-    playerName: "Andy",
-    characterName: "Percy",
-    role: "Investigador com missão secreta",
-    status: "Ativo",
-    notes:
-      "Personagem de jogador. Andy nunca é tratada como pessoa ou contato separado de Percy dentro da campanha. O medidor de exposição mede apenas o risco da missão secreta de Percy.",
-    isPending: false,
-  },
-  {
     id: "p-filho-diretor",
     playerName: "Ainda não definido",
     characterName: "Filho do Diretor",

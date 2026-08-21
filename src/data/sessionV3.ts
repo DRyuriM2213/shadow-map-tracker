@@ -32,6 +32,7 @@ export const SESSION_ONE_RECAP: CanonFact[] = [
   { id: "canon-paternidade", day: 2, time: "14:00", title: "Sofia descobriu a paternidade", detail: "Ao investigar caixas de mudança com resultado 24 em Investigação, Sofia encontrou uma foto da mãe com Augusto e descobriu que é filha dele.", involved: ["Sofia", "Augusto"] },
   { id: "canon-aproximacao", day: 2, time: "18:00", title: "Aliança informal", detail: "Sofia se aproximou mais de Jade, Vitor Hugo e Adolfo.", involved: ["Sofia", "Jade Nogueira", "Vitor Hugo Nogueira", "Adolfo"] },
   { id: "canon-invasao", day: 2, time: "21:00", title: "Ponto atual — invasão noturna", detail: "Jade, Vitor Hugo, Adolfo e Sofia combinaram invadir a universidade e a sessão terminou quando estavam entrando/iniciando a invasão.", involved: ["Sofia", "Adolfo", "Jade Nogueira", "Vitor Hugo Nogueira"] },
+  { id: "canon-percy-npc", day: 2, time: "21:00", title: "Percy entra como NPC", detail: "Percy deixou de ser personagem de jogador (Andy saiu da campanha). No início da invasão noturna, Percy aparece e se junta ao grupo como NPC controlado pelo mestre, preservando seu histórico e sua missão secreta — que agora é material do mestre.", involved: ["Percy", "Sofia", "Adolfo", "Jade Nogueira", "Vitor Hugo Nogueira"] },
 ];
 
 export interface FlexibleEvent {
@@ -54,11 +55,11 @@ export const V3_EVENTS: FlexibleEvent[] = [
     time: "21:00",
     title: "Retomar a invasão",
     kind: "CANON",
-    description: "Continue exatamente do ponto em que Sofia, Adolfo, Jade e Vitor Hugo estavam entrando no campus.",
+    description: "Continue exatamente do ponto em que Sofia, Adolfo, Jade e Vitor Hugo estavam entrando no campus. Percy aparece aqui como NPC e se junta ao grupo.",
     trigger: "Abertura da próxima sessão.",
     locationIds: ["l-saida-principal", "l-recepcao", "l-patio"],
-    narration: "A universidade à noite não parece vazia; parece suspensa. As luzes de emergência recortam os corredores e todo ruído fica maior do que deveria. As marcas das portas danificadas ainda estão ali, lembrando que qualquer segurança atento já tem motivo para desconfiar de movimento fora de hora.",
-    gmNote: "Não empurre o grupo para uma sala específica. Mostre os acessos e deixe escolherem o primeiro alvo.",
+    narration: "A universidade à noite não parece vazia; parece suspensa. As luzes de emergência recortam os corredores e todo ruído fica maior do que deveria. As marcas das portas danificadas ainda estão ali, lembrando que qualquer segurança atento já tem motivo para desconfiar de movimento fora de hora. Antes de o grupo escolher por onde entrar, uma figura se destaca do escuro perto do acesso: Percy, esperando, como se já soubesse do plano.",
+    gmNote: "Não empurre o grupo para uma sala específica. Mostre os acessos e deixe escolherem o primeiro alvo. Percy é NPC do mestre: pode ter falas e reações prontas, mas o grupo decide se aceita a companhia. Nunca narre fala ou decisão por Augusto, Sofia, Adolfo ou Amelie.",
   },
   {
     id: "v3-d2-ronda",
@@ -222,7 +223,7 @@ export const GUIDE_BY_DAY: Record<CampaignDay, { now: string; ifTheyGo: string; 
     contingency: "Se algo antigo for necessário, entregue por fonte redundante sem apagar o cânone da mesa.",
   },
   2: {
-    now: "21h: Sofia, Adolfo, Jade e Vitor Hugo iniciam a invasão noturna. Comece perguntando qual setor querem atingir primeiro e mostre atalhos de locais.",
+    now: "21h: Sofia, Adolfo, Jade e Vitor Hugo iniciam a invasão noturna e Percy aparece como NPC para entrar junto. Comece perguntando qual setor querem atingir primeiro e mostre atalhos de locais.",
     ifTheyGo: "Segurança = câmeras/acessos; Secretaria = crachá/Wi-Fi/convocações; Arquivo = Ricardo/reforma; Química = HF; Manutenção = setor apagado/Bloco C.",
     events: "Ronda após 22h, danos das portas chamando atenção e qualquer registro digital gerado pela invasão.",
     pending: "Priorize pelo menos uma linha concreta nova. Não exija que encontrem todas na mesma noite.",
