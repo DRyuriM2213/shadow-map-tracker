@@ -32,6 +32,7 @@ export const SESSION_ONE_RECAP: CanonFact[] = [
   { id: "canon-paternidade", day: 2, time: "14:00", title: "Sofia descobriu a paternidade", detail: "Ao investigar caixas de mudança com resultado 24 em Investigação, Sofia encontrou uma foto da mãe com Augusto e descobriu que é filha dele.", involved: ["Sofia", "Augusto"] },
   { id: "canon-aproximacao", day: 2, time: "18:00", title: "Aliança informal", detail: "Sofia se aproximou mais de Jade, Vitor Hugo e Adolfo.", involved: ["Sofia", "Jade Nogueira", "Vitor Hugo Nogueira", "Adolfo"] },
   { id: "canon-invasao", day: 2, time: "21:00", title: "Ponto atual — invasão noturna", detail: "Jade, Vitor Hugo, Adolfo e Sofia combinaram invadir a universidade e a sessão terminou quando estavam entrando/iniciando a invasão.", involved: ["Sofia", "Adolfo", "Jade Nogueira", "Vitor Hugo Nogueira"] },
+  { id: "canon-percy-npc", day: 2, time: "21:00", title: "Percy entra como NPC", detail: "Percy deixou de ser personagem de jogador (Andy saiu da campanha). No início da invasão noturna, Percy aparece e se junta ao grupo como NPC controlado pelo mestre, preservando seu histórico e sua missão secreta — que agora é material do mestre.", involved: ["Percy", "Sofia", "Adolfo", "Jade Nogueira", "Vitor Hugo Nogueira"] },
 ];
 
 export interface FlexibleEvent {
