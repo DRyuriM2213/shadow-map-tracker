@@ -31,7 +31,7 @@ export function SkillTrainingPanel({ sheet, editable, onChange, onRollSkill }: {
 }) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("TODAS");
   const [query, setQuery] = useState("");
-  const [powerDrafts, setPowerDrafts] = useState<Record<string, string>>( {} );
+  const [powerDrafts, setPowerDrafts] = useState<Record<string, string>>({});
   const cap = maxTrainingLevelForNex(sheet.concept.nex);
   const creation = sheet.progression.creation;
 
@@ -97,6 +97,7 @@ export function SkillTrainingPanel({ sheet, editable, onChange, onRollSkill }: {
     const source = powerSources.find((choice) => choice.id === choiceId);
     if (!source || remainingPowerTrainingSlots(source, sheet.progression.skillTrainingGrants) <= 0) return;
     const skillId = powerDrafts[choiceId];
+    if (!skillId) return;
     const candidate = powerTrainingCandidates(sheet.concept.nex, sheet.skills).find((item) => item.skillId === skillId);
     if (!candidate) return;
     const grant: SkillTrainingGrant = {
