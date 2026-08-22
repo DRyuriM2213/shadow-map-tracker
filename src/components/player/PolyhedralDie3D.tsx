@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import "./dice3d.css";
 
 type Vec3 = [number, number, number];
 type DiceStyle = CSSProperties & Record<`--${string}`, string | number>;
