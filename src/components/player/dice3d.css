@@ -1,0 +1,261 @@
+/* True 3D dice scene used by the player roll theater. */
+.dice-overlay-backdrop {
+  border: 0;
+  cursor: default;
+  pointer-events: auto;
+}
+
+.dice-main-wrap {
+  min-height: 230px;
+  perspective: 1100px;
+  perspective-origin: 50% 42%;
+  overflow: visible;
+}
+
+.poly-die-stage {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+  perspective: 900px;
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.poly-die-object {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+  filter: drop-shadow(0 24px 18px rgba(0, 0, 0, .48));
+}
+
+.poly-die-stage.is-rolling .poly-die-object {
+  animation: poly-die-true-tumble 1.14s cubic-bezier(.12,.68,.16,1) both;
+}
+
+.poly-die-stage.is-settled .poly-die-object {
+  transform: rotateX(var(--dice-final-x)) rotateY(var(--dice-final-y)) rotateZ(var(--dice-final-z));
+  animation: poly-die-settle .34s cubic-bezier(.15,.82,.18,1) both;
+}
+
+.poly-die-icosahedron,
+.poly-die-cube {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.poly-die-triangle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+  transform-origin: 50% 66.6667%;
+  backface-visibility: hidden;
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.19), rgba(255,255,255,.035) 28%, transparent 54%),
+    linear-gradient(35deg, color-mix(in oklch, var(--color-primary) 29%, #12151c), #080a0e 68%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), inset 0 -18px 26px rgba(0,0,0,.27);
+  color: rgba(255,255,255,.82);
+}
+
+.poly-die-triangle:nth-child(3n + 2) {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.13), transparent 45%),
+    linear-gradient(30deg, color-mix(in oklch, var(--color-primary) 21%, #0d1117), #06080b 72%);
+}
+
+.poly-die-triangle:nth-child(4n) {
+  background:
+    linear-gradient(160deg, rgba(255,255,255,.12), transparent 36%),
+    linear-gradient(45deg, color-mix(in oklch, var(--color-primary) 34%, #12151c), #08090d 70%);
+}
+
+.poly-die-triangle span {
+  transform: translateY(8px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .72rem;
+  font-weight: 800;
+  text-shadow: 0 2px 6px rgba(0,0,0,.9);
+  opacity: .72;
+}
+
+.poly-die-triangle.is-result-face {
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.24), transparent 42%),
+    linear-gradient(32deg, color-mix(in oklch, var(--color-primary) 56%, #151820), #090b10 72%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-primary) 70%, rgba(255,255,255,.2)), 0 0 18px color-mix(in oklch, var(--color-primary) 18%, transparent);
+}
+
+.poly-die-stage.is-critical .poly-die-triangle.is-result-face {
+  background:
+    linear-gradient(150deg, rgba(255,255,255,.28), transparent 42%),
+    linear-gradient(32deg, color-mix(in oklch, var(--color-route-amarelo) 58%, #17130a), #090806 72%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--color-route-amarelo) 72%, rgba(255,255,255,.2)), 0 0 24px color-mix(in oklch, var(--color-route-amarelo) 25%, transparent);
+}
+
+.poly-die-cube-face {
+  position: absolute;
+  left: -48px;
+  top: -48px;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.16), transparent 38%),
+    linear-gradient(30deg, color-mix(in oklch, var(--color-primary) 28%, #11151b), #080a0e 70%);
+  box-shadow: inset 0 0 28px rgba(0,0,0,.22);
+}
+
+.poly-die-cube-face span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.7rem;
+  font-weight: 900;
+  text-shadow: 0 4px 10px rgba(0,0,0,.75);
+}
+
+.poly-die-cube-face.is-result-face {
+  border-color: color-mix(in oklch, var(--color-primary) 72%, rgba(255,255,255,.2));
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.2), transparent 40%),
+    linear-gradient(30deg, color-mix(in oklch, var(--color-primary) 47%, #11151b), #080a0e 72%);
+}
+
+.poly-die-floor-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  width: 112px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.65);
+  filter: blur(12px);
+  transform: translateX(-50%) rotateX(66deg);
+  opacity: .65;
+  transition: transform .3s ease, opacity .3s ease;
+}
+
+.poly-die-stage.is-rolling .poly-die-floor-shadow {
+  animation: poly-die-shadow 1.14s ease-out both;
+}
+
+.poly-die-result-badge {
+  position: absolute;
+  right: -4px;
+  bottom: 12px;
+  min-width: 58px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 12px;
+  background: rgba(4,6,9,.8);
+  box-shadow: 0 10px 30px -18px #000;
+  padding: .4rem .52rem;
+  backdrop-filter: blur(8px);
+}
+
+.poly-die-result-badge span {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .52rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: color-mix(in oklch, var(--color-foreground) 45%, transparent);
+}
+
+.poly-die-result-badge strong {
+  display: block;
+  margin-top: .05rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.dice-overlay.is-rolling .poly-die-result-badge {
+  opacity: .42;
+}
+
+.dice-overlay.is-revealed .poly-die-result-badge {
+  animation: poly-result-pop .32s .05s cubic-bezier(.16,.86,.18,1) both;
+}
+
+.dice-dismiss-hint {
+  margin-top: .72rem;
+  font-size: .58rem;
+  letter-spacing: .03em;
+  color: color-mix(in oklch, var(--color-foreground) 35%, transparent);
+}
+
+.dice-overlay.is-critical .poly-die-result-badge {
+  border-color: color-mix(in oklch, var(--color-route-amarelo) 42%, rgba(255,255,255,.1));
+  box-shadow: 0 0 24px color-mix(in oklch, var(--color-route-amarelo) 12%, transparent), 0 10px 30px -18px #000;
+}
+
+@keyframes poly-die-true-tumble {
+  0% {
+    transform: translate3d(-46px,-92px,20px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(.72);
+    filter: blur(.6px) drop-shadow(0 32px 24px rgba(0,0,0,.34));
+  }
+  28% {
+    transform: translate3d(38px,12px,10px) rotateX(330deg) rotateY(255deg) rotateZ(112deg) scale(.92);
+  }
+  52% {
+    transform: translate3d(-22px,-28px,22px) rotateX(610deg) rotateY(520deg) rotateZ(295deg) scale(1.03);
+  }
+  73% {
+    transform: translate3d(14px,7px,2px) rotateX(810deg) rotateY(745deg) rotateZ(438deg) scale(.98);
+  }
+  88% {
+    transform: translate3d(-5px,-8px,4px) rotateX(calc(var(--dice-final-x) + 930deg)) rotateY(calc(var(--dice-final-y) + 860deg)) rotateZ(calc(var(--dice-final-z) + 510deg)) scale(1.015);
+  }
+  100% {
+    transform: translate3d(0,0,0) rotateX(var(--dice-final-x)) rotateY(var(--dice-final-y)) rotateZ(var(--dice-final-z)) scale(1);
+    filter: drop-shadow(0 24px 18px rgba(0,0,0,.48));
+  }
+}
+
+@keyframes poly-die-settle {
+  0% { transform: translateY(-8px) rotateX(var(--dice-final-x)) rotateY(var(--dice-final-y)) rotateZ(var(--dice-final-z)) scale(.96); }
+  68% { transform: translateY(3px) rotateX(var(--dice-final-x)) rotateY(var(--dice-final-y)) rotateZ(var(--dice-final-z)) scale(1.025); }
+  100% { transform: translateY(0) rotateX(var(--dice-final-x)) rotateY(var(--dice-final-y)) rotateZ(var(--dice-final-z)) scale(1); }
+}
+
+@keyframes poly-die-shadow {
+  0% { transform: translateX(-50%) rotateX(66deg) scale(.5); opacity: .18; }
+  35% { transform: translateX(-50%) rotateX(66deg) scale(1.15); opacity: .7; }
+  55% { transform: translateX(-50%) rotateX(66deg) scale(.68); opacity: .32; }
+  78% { transform: translateX(-50%) rotateX(66deg) scale(1.04); opacity: .72; }
+  100% { transform: translateX(-50%) rotateX(66deg) scale(1); opacity: .65; }
+}
+
+@keyframes poly-result-pop {
+  from { opacity: 0; transform: translateY(5px) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 640px) {
+  .dice-main-wrap { min-height: 205px; }
+  .poly-die-stage { width: 160px; height: 160px; transform: scale(.9); }
+  .poly-die-result-badge { right: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poly-die-stage.is-rolling .poly-die-object,
+  .poly-die-stage.is-settled .poly-die-object,
+  .poly-die-stage.is-rolling .poly-die-floor-shadow,
+  .dice-overlay.is-revealed .poly-die-result-badge {
+    animation: none !important;
+  }
+  .poly-die-object {
+    transform: rotateX(var(--dice-final-x)) rotateY(var(--dice-final-y)) rotateZ(var(--dice-final-z)) !important;
+  }
+}
