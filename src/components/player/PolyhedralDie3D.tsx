@@ -4,10 +4,15 @@ import "./dice3d.css";
 type Vec3 = [number, number, number];
 type Vec4 = [number, number, number, number];
 type Mat4 = number[];
+type Uv = [number, number];
 
 type Mesh = {
   vertices: Float32Array;
   vertexCount: number;
+  labels: number[];
+  atlasColumns: number;
+  atlasRows: number;
+  targetOrientation: Vec4;
 };
 
 const PHI = (1 + Math.sqrt(5)) / 2;
@@ -58,6 +63,7 @@ uniform vec3 uBaseColor;
 uniform vec3 uAccentColor;
 uniform vec3 uLightDirection;
 uniform sampler2D uNumberTexture;
+uniform float uReveal;
 out vec4 outColor;
 void main() {
   vec3 n = normalize(vNormal);
@@ -80,10 +86,11 @@ void main() {
   vec3 edgeColor = mix(vec3(0.018, 0.016, 0.020), uAccentColor * 0.30, 0.42);
   vec3 color = mix(edgeColor, surface, inside);
 
-  if (vResultFace > 0.5) {
-    vec4 glyph = texture(uNumberTexture, vUv);
-    color += uAccentColor * 0.055;
-    color = mix(color, vec3(0.98, 0.95, 0.91), glyph.a * 0.94);
+  vec4 glyph = texture(uNumberTexture, vUv);
+  color = mix(color, vec3(0.98, 0.95, 0.91), glyph.a * 0.92);
+
+  if (vResultFace > 0.5 && uReveal > 0.5) {
+    color += uAccentColor * 0.085;
   }
 
   outColor = vec4(color, 1.0);
@@ -96,7 +103,7 @@ export function PolyhedralDie3D({ value, sides, rolling, critical = false }: {
   critical?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const anglesRef = useRef<Vec3>([0, 0, 0]);
+  const orientationRef = useRef<Vec4>([0, 0, 0, 1]);
   const [webglFailed, setWebglFailed] = useState(false);
   const normalizedSides = sides > 1 ? Math.trunc(sides) : 20;
 
@@ -122,10 +129,10 @@ export function PolyhedralDie3D({ value, sides, rolling, critical = false }: {
       return;
     }
 
-    const mesh = normalizedSides === 6 ? buildCubeMesh() : buildIcosahedronMesh();
+    const mesh = normalizedSides === 6 ? buildCubeMesh(value) : buildIcosahedronMesh(normalizedSides, value);
     const buffer = gl.createBuffer();
     const vao = gl.createVertexArray();
-    const texture = createNumberTexture(gl, value);
+    const texture = createNumberAtlas(gl, mesh.labels, mesh.atlasColumns, mesh.atlasRows);
     if (!buffer || !vao || !texture) {
       setWebglFailed(true);
       gl.deleteProgram(program);
@@ -162,50 +169,46 @@ export function PolyhedralDie3D({ value, sides, rolling, critical = false }: {
 
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const start = performance.now();
-    const startAngles: Vec3 = [...anglesRef.current];
-    const targetAngles: Vec3 = [
-      -0.12 + ((value % 3) - 1) * 0.025,
-      0.18 + ((value % 5) - 2) * 0.014,
-      ((value * 0.61803398875) % 1) * Math.PI * 2,
-    ];
+    const startOrientation: Vec4 = [...orientationRef.current];
+    const neutralOrientation = normalizeQuaternion(quaternionFromEuler(0.55, -0.72, 0.24));
     let frame = 0;
 
     const render = (now: number) => {
       resizeCanvas(canvas, gl);
       const elapsed = now - start;
-      let rx: number;
-      let ry: number;
-      let rz: number;
+      let orientation: Vec4;
       let lift = 0;
       let scale = 1;
+      let reveal = 0;
 
-      if (reducedMotion) {
-        [rx, ry, rz] = targetAngles;
-      } else if (rolling) {
-        const t = elapsed / 1000;
-        rx = startAngles[0] + t * 9.7 + Math.sin(t * 8.4) * 0.30;
-        ry = startAngles[1] + t * 11.8 + Math.cos(t * 7.1) * 0.28;
-        rz = startAngles[2] + t * 7.2;
-        const decay = Math.max(0.1, 1 - elapsed / 1650);
-        lift = Math.abs(Math.sin(t * 8.6)) * 0.32 * decay;
-        scale = 0.96 + Math.sin(t * 10.2) * 0.025;
+      if (rolling) {
+        if (reducedMotion) {
+          orientation = neutralOrientation;
+        } else {
+          const t = elapsed / 1000;
+          const spin = quaternionFromEuler(
+            t * 9.7 + Math.sin(t * 8.4) * 0.30,
+            t * 11.8 + Math.cos(t * 7.1) * 0.28,
+            t * 7.2,
+          );
+          orientation = normalizeQuaternion(multiplyQuaternion(spin, startOrientation));
+          const decay = Math.max(0.1, 1 - elapsed / 1650);
+          lift = Math.abs(Math.sin(t * 8.6)) * 0.32 * decay;
+          scale = 0.96 + Math.sin(t * 10.2) * 0.025;
+        }
       } else {
-        const duration = 520;
+        const duration = reducedMotion ? 1 : 620;
         const p = Math.min(1, elapsed / duration);
-        const eased = easeOutBack(p, 1.04);
-        const fromX = wrapAngle(startAngles[0]);
-        const fromY = wrapAngle(startAngles[1]);
-        const fromZ = wrapAngle(startAngles[2]);
-        rx = lerpAngle(fromX, targetAngles[0], eased);
-        ry = lerpAngle(fromY, targetAngles[1], eased);
-        rz = lerpAngle(fromZ, targetAngles[2], eased);
-        lift = Math.sin(Math.min(1, p) * Math.PI) * 0.075;
-        scale = 0.94 + eased * 0.06;
+        const eased = reducedMotion ? 1 : easeOutCubic(p);
+        orientation = slerpQuaternion(startOrientation, mesh.targetOrientation, eased);
+        lift = reducedMotion ? 0 : Math.sin(p * Math.PI) * 0.07;
+        scale = reducedMotion ? 1 : 0.95 + eased * 0.05;
+        reveal = p > 0.82 ? 1 : 0;
       }
 
-      anglesRef.current = [rx, ry, rz];
-      drawDie(gl, program, mesh, rx, ry, rz, lift, scale);
-      if (rolling || elapsed < 650) frame = window.requestAnimationFrame(render);
+      orientationRef.current = orientation;
+      drawDie(gl, program, mesh, orientation, lift, scale, reveal);
+      if (rolling || elapsed < 760) frame = window.requestAnimationFrame(render);
     };
 
     frame = window.requestAnimationFrame(render);
@@ -228,92 +231,168 @@ export function PolyhedralDie3D({ value, sides, rolling, critical = false }: {
   </div>;
 }
 
-function drawDie(gl: WebGL2RenderingContext, program: WebGLProgram, mesh: Mesh, rx: number, ry: number, rz: number, lift: number, scale: number) {
+function drawDie(gl: WebGL2RenderingContext, program: WebGLProgram, mesh: Mesh, orientation: Vec4, lift: number, scale: number, reveal: number) {
   const aspect = gl.canvas.width / Math.max(1, gl.canvas.height);
   const projection = perspective(Math.PI / 5.4, aspect, 0.1, 20);
   const view = translation(0, -0.02, -4.35);
-  const model = multiply(
-    translation(0, lift, 0),
-    multiply(rotationZ(rz), multiply(rotationY(ry), multiply(rotationX(rx), scaling(scale, scale, scale)))),
-  );
+  const rotation = rotationFromQuaternion(orientation);
+  const model = multiply(translation(0, lift, 0), multiply(rotation, scaling(scale, scale, scale)));
   const mvp = multiply(projection, multiply(view, model));
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.useProgram(program);
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uModel"), false, new Float32Array(model));
   gl.uniformMatrix4fv(gl.getUniformLocation(program, "uMvp"), false, new Float32Array(mvp));
+  gl.uniform1f(gl.getUniformLocation(program, "uReveal"), reveal);
   gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
 }
 
-function buildIcosahedronMesh(): Mesh {
-  const raw = ICOSAHEDRON_VERTICES.map((v) => mul3(normalize3(v), 1.16));
-  const firstFace = ICOSAHEDRON_FACES[0];
-  const firstNormal = outwardNormal(raw[firstFace[0]]!, raw[firstFace[1]]!, raw[firstFace[2]]!);
-  const align = quaternionFromUnitVectors(firstNormal, [0, 0, 1]);
-  const vertices = raw.map((v) => rotateByQuaternion(v, align));
+function buildIcosahedronMesh(sides: number, value: number): Mesh {
+  const vertices = ICOSAHEDRON_VERTICES.map((v) => mul3(normalize3(v), 1.16));
   const data: number[] = [];
   const bary: Vec3[] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-  const uv: Array<[number, number]> = [[0.5, 0.04], [0.04, 0.94], [0.96, 0.94]];
+  const labels = Array.from({ length: ICOSAHEDRON_FACES.length }, (_, faceIndex) => {
+    if (sides <= 20) return (faceIndex % sides) + 1;
+    if (faceIndex === 0) return value;
+    return ((value + faceIndex * 17 - 1) % sides) + 1;
+  });
+  const resultFaceIndex = sides <= 20 ? Math.max(0, Math.min(19, value - 1)) : 0;
+  let targetNormal: Vec3 = [0, 0, 1];
+  let targetUp: Vec3 = [0, 1, 0];
 
   ICOSAHEDRON_FACES.forEach((face, faceIndex) => {
-    let a = vertices[face[0]]!;
-    let b = vertices[face[1]]!;
-    let c = vertices[face[2]]!;
-    let normal = outwardNormal(a, b, c);
-    const center = mul3(add3(add3(a, b), c), 1 / 3);
-    if (dot3(normal, center) < 0) {
-      const tmp = b;
-      b = c;
-      c = tmp;
-      normal = outwardNormal(a, b, c);
+    const oriented = orientTriangle(vertices, face);
+    const uv = triangleUvsForCell(faceIndex, 5, 4);
+    if (faceIndex === resultFaceIndex) {
+      targetNormal = oriented.normal;
+      targetUp = normalize3(sub3(oriented.a, oriented.center));
     }
-    [a, b, c].forEach((point, index) => {
-      data.push(...point, ...normal, ...bary[index]!, ...uv[index]!, faceIndex === 0 ? 1 : 0);
+    [oriented.a, oriented.b, oriented.c].forEach((point, index) => {
+      data.push(...point, ...oriented.normal, ...bary[index]!, ...uv[index]!, faceIndex === resultFaceIndex ? 1 : 0);
     });
   });
-  return { vertices: new Float32Array(data), vertexCount: data.length / 12 };
+
+  return {
+    vertices: new Float32Array(data),
+    vertexCount: data.length / 12,
+    labels,
+    atlasColumns: 5,
+    atlasRows: 4,
+    targetOrientation: orientationForFace(targetNormal, targetUp),
+  };
 }
 
-function buildCubeMesh(): Mesh {
+function buildCubeMesh(value: number): Mesh {
   const data: number[] = [];
-  const faces: Array<{ points: Vec3[]; normal: Vec3 }> = [
-    { points: [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], normal: [0, 0, 1] },
-    { points: [[1, -1, -1], [-1, -1, -1], [-1, 1, -1], [1, 1, -1]], normal: [0, 0, -1] },
-    { points: [[1, -1, 1], [1, -1, -1], [1, 1, -1], [1, 1, 1]], normal: [1, 0, 0] },
-    { points: [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1]], normal: [-1, 0, 0] },
-    { points: [[-1, 1, 1], [1, 1, 1], [1, 1, -1], [-1, 1, -1]], normal: [0, 1, 0] },
-    { points: [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1]], normal: [0, -1, 0] },
+  const labels = [1, 2, 3, 4, 5, 6];
+  const resultFaceIndex = Math.max(0, Math.min(5, value - 1));
+  const faces: Array<{ points: [Vec3, Vec3, Vec3, Vec3]; normal: Vec3; up: Vec3 }> = [
+    { points: [[-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]], normal: [0, 0, 1], up: [0, 1, 0] },
+    { points: [[1, -1, -1], [-1, -1, -1], [-1, 1, -1], [1, 1, -1]], normal: [0, 0, -1], up: [0, 1, 0] },
+    { points: [[1, -1, 1], [1, -1, -1], [1, 1, -1], [1, 1, 1]], normal: [1, 0, 0], up: [0, 1, 0] },
+    { points: [[-1, -1, -1], [-1, -1, 1], [-1, 1, 1], [-1, 1, -1]], normal: [-1, 0, 0], up: [0, 1, 0] },
+    { points: [[-1, 1, 1], [1, 1, 1], [1, 1, -1], [-1, 1, -1]], normal: [0, 1, 0], up: [0, 0, -1] },
+    { points: [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1]], normal: [0, -1, 0], up: [0, 0, 1] },
   ];
   const triangles = [[0, 1, 2], [0, 2, 3]] as const;
-  const uv: Array<[number, number]> = [[0.06, 0.94], [0.94, 0.94], [0.94, 0.06], [0.06, 0.06]];
   const bary: Vec3[] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+
   faces.forEach((face, faceIndex) => {
+    const uv = quadUvsForCell(faceIndex, 3, 2);
     triangles.forEach((triangle) => triangle.forEach((pointIndex, index) => {
       const p = mul3(face.points[pointIndex]!, 0.84);
-      data.push(...p, ...face.normal, ...bary[index]!, ...uv[pointIndex]!, faceIndex === 0 ? 1 : 0);
+      data.push(...p, ...face.normal, ...bary[index]!, ...uv[pointIndex]!, faceIndex === resultFaceIndex ? 1 : 0);
     }));
   });
-  return { vertices: new Float32Array(data), vertexCount: data.length / 12 };
+
+  return {
+    vertices: new Float32Array(data),
+    vertexCount: data.length / 12,
+    labels,
+    atlasColumns: 3,
+    atlasRows: 2,
+    targetOrientation: orientationForFace(faces[resultFaceIndex]!.normal, faces[resultFaceIndex]!.up),
+  };
 }
 
-function createNumberTexture(gl: WebGL2RenderingContext, value: number) {
+function orientTriangle(vertices: Vec3[], face: readonly [number, number, number]) {
+  const a = vertices[face[0]]!;
+  let b = vertices[face[1]]!;
+  let c = vertices[face[2]]!;
+  let normal = outwardNormal(a, b, c);
+  const center = mul3(add3(add3(a, b), c), 1 / 3);
+  if (dot3(normal, center) < 0) {
+    const tmp = b;
+    b = c;
+    c = tmp;
+    normal = outwardNormal(a, b, c);
+  }
+  return { a, b, c, center, normal };
+}
+
+function triangleUvsForCell(index: number, columns: number, rows: number): [Uv, Uv, Uv] {
+  const column = index % columns;
+  const row = Math.floor(index / columns);
+  const left = column / columns;
+  const right = (column + 1) / columns;
+  const top = 1 - row / rows;
+  const bottom = 1 - (row + 1) / rows;
+  const padX = (right - left) * 0.10;
+  const padY = (top - bottom) * 0.09;
+  return [
+    [(left + right) / 2, top - padY],
+    [left + padX, bottom + padY],
+    [right - padX, bottom + padY],
+  ];
+}
+
+function quadUvsForCell(index: number, columns: number, rows: number): [Uv, Uv, Uv, Uv] {
+  const column = index % columns;
+  const row = Math.floor(index / columns);
+  const left = column / columns;
+  const right = (column + 1) / columns;
+  const top = 1 - row / rows;
+  const bottom = 1 - (row + 1) / rows;
+  const padX = (right - left) * 0.12;
+  const padY = (top - bottom) * 0.12;
+  return [
+    [left + padX, bottom + padY],
+    [right - padX, bottom + padY],
+    [right - padX, top - padY],
+    [left + padX, top - padY],
+  ];
+}
+
+function createNumberAtlas(gl: WebGL2RenderingContext, labels: number[], columns: number, rows: number) {
+  const cellSize = 256;
   const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
+  canvas.width = columns * cellSize;
+  canvas.height = rows * cellSize;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-  ctx.clearRect(0, 0, 256, 256);
-  ctx.fillStyle = "rgba(255,255,255,1)";
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `900 ${String(value).length > 1 ? 86 : 102}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-  ctx.shadowColor = "rgba(0,0,0,.35)";
-  ctx.shadowBlur = 4;
-  ctx.fillText(String(value), 128, 142);
+
+  labels.forEach((label, index) => {
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const text = String(label);
+    const fontSize = text.length >= 3 ? 86 : text.length === 2 ? 108 : 128;
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,1)";
+    ctx.font = `900 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    ctx.shadowColor = "rgba(0,0,0,.42)";
+    ctx.shadowBlur = 6;
+    ctx.fillText(text, column * cellSize + cellSize / 2, row * cellSize + cellSize * 0.53);
+    ctx.restore();
+  });
+
   const texture = gl.createTexture();
   if (!texture) return null;
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -374,7 +453,17 @@ function resizeCanvas(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) {
 }
 
 function FallbackDie({ value, rolling }: { value: number; rolling: boolean }) {
-  return <div className={`webgl-die-fallback ${rolling ? "is-rolling" : ""}`} aria-hidden="true"><span>{rolling ? "?" : value}</span></div>;
+  return <div className={`webgl-die-fallback ${rolling ? "is-rolling" : ""}`} aria-hidden="true"><span>{rolling ? "•" : value}</span></div>;
+}
+
+function orientationForFace(normal: Vec3, up: Vec3): Vec4 {
+  const faceNormal = normalize3(normal);
+  const faceUp = normalize3(up);
+  const alignNormal = quaternionFromUnitVectors(faceNormal, [0, 0, 1]);
+  const alignedUp = normalize3(rotateByQuaternion(faceUp, alignNormal));
+  const twistAngle = Math.atan2(alignedUp[0], alignedUp[1]);
+  const alignUp = quaternionFromAxisAngle([0, 0, 1], twistAngle);
+  return normalizeQuaternion(multiplyQuaternion(alignUp, alignNormal));
 }
 
 function perspective(fov: number, aspect: number, near: number, far: number): Mat4 {
@@ -384,15 +473,79 @@ function perspective(fov: number, aspect: number, near: number, far: number): Ma
 }
 function translation(x: number, y: number, z: number): Mat4 { return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]; }
 function scaling(x: number, y: number, z: number): Mat4 { return [x, 0, 0, 0, 0, y, 0, 0, 0, 0, z, 0, 0, 0, 0, 1]; }
-function rotationX(a: number): Mat4 { const c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]; }
-function rotationY(a: number): Mat4 { const c = Math.cos(a), s = Math.sin(a); return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]; }
-function rotationZ(a: number): Mat4 { const c = Math.cos(a), s = Math.sin(a); return [c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]; }
 function multiply(a: Mat4, b: Mat4): Mat4 {
   const out = new Array<number>(16).fill(0);
   for (let column = 0; column < 4; column += 1) for (let row = 0; row < 4; row += 1) {
     for (let i = 0; i < 4; i += 1) out[column * 4 + row]! += a[i * 4 + row]! * b[column * 4 + i]!;
   }
   return out;
+}
+
+function rotationFromQuaternion(q: Vec4): Mat4 {
+  const [x, y, z, w] = normalizeQuaternion(q);
+  const x2 = x + x, y2 = y + y, z2 = z + z;
+  const xx = x * x2, xy = x * y2, xz = x * z2;
+  const yy = y * y2, yz = y * z2, zz = z * z2;
+  const wx = w * x2, wy = w * y2, wz = w * z2;
+  return [
+    1 - (yy + zz), xy + wz, xz - wy, 0,
+    xy - wz, 1 - (xx + zz), yz + wx, 0,
+    xz + wy, yz - wx, 1 - (xx + yy), 0,
+    0, 0, 0, 1,
+  ];
+}
+
+function quaternionFromEuler(x: number, y: number, z: number): Vec4 {
+  const qx = quaternionFromAxisAngle([1, 0, 0], x);
+  const qy = quaternionFromAxisAngle([0, 1, 0], y);
+  const qz = quaternionFromAxisAngle([0, 0, 1], z);
+  return multiplyQuaternion(qz, multiplyQuaternion(qy, qx));
+}
+
+function quaternionFromAxisAngle(axis: Vec3, angle: number): Vec4 {
+  const n = normalize3(axis);
+  const half = angle / 2;
+  const s = Math.sin(half);
+  return [n[0] * s, n[1] * s, n[2] * s, Math.cos(half)];
+}
+
+function multiplyQuaternion(a: Vec4, b: Vec4): Vec4 {
+  const [ax, ay, az, aw] = a;
+  const [bx, by, bz, bw] = b;
+  return [
+    aw * bx + ax * bw + ay * bz - az * by,
+    aw * by - ax * bz + ay * bw + az * bx,
+    aw * bz + ax * by - ay * bx + az * bw,
+    aw * bw - ax * bx - ay * by - az * bz,
+  ];
+}
+
+function normalizeQuaternion(q: Vec4): Vec4 {
+  const len = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
+  return [q[0] / len, q[1] / len, q[2] / len, q[3] / len];
+}
+
+function slerpQuaternion(from: Vec4, to: Vec4, t: number): Vec4 {
+  let a = normalizeQuaternion(from);
+  let b = normalizeQuaternion(to);
+  let cosine = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+  if (cosine < 0) {
+    b = [-b[0], -b[1], -b[2], -b[3]];
+    cosine = -cosine;
+  }
+  if (cosine > 0.9995) {
+    return normalizeQuaternion([
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+      a[2] + (b[2] - a[2]) * t,
+      a[3] + (b[3] - a[3]) * t,
+    ]);
+  }
+  const theta = Math.acos(Math.min(1, cosine));
+  const sinTheta = Math.sin(theta);
+  const w1 = Math.sin((1 - t) * theta) / sinTheta;
+  const w2 = Math.sin(t * theta) / sinTheta;
+  return [a[0] * w1 + b[0] * w2, a[1] * w1 + b[1] * w2, a[2] * w1 + b[2] * w2, a[3] * w1 + b[3] * w2];
 }
 
 function add3(a: Vec3, b: Vec3): Vec3 { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
@@ -410,16 +563,14 @@ function quaternionFromUnitVectors(from: Vec3, to: Vec3): Vec4 {
     r = 0;
     xyz = Math.abs(from[0]) > Math.abs(from[2]) ? [-from[1], from[0], 0] : [0, -from[2], from[1]];
   } else xyz = cross3(from, to);
-  const length = Math.hypot(xyz[0], xyz[1], xyz[2], r) || 1;
-  return [xyz[0] / length, xyz[1] / length, xyz[2] / length, r / length];
+  return normalizeQuaternion([xyz[0], xyz[1], xyz[2], r]);
 }
+
 function rotateByQuaternion(v: Vec3, q: Vec4): Vec3 {
-  const [qx, qy, qz, qw] = q;
+  const [qx, qy, qz, qw] = normalizeQuaternion(q);
   const uv = cross3([qx, qy, qz], v);
   const uuv = cross3([qx, qy, qz], uv);
   return add3(v, add3(mul3(uv, 2 * qw), mul3(uuv, 2)));
 }
 
-function easeOutBack(t: number, strength: number) { const c1 = strength; const c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-function wrapAngle(value: number) { const tau = Math.PI * 2; return ((value + Math.PI) % tau + tau) % tau - Math.PI; }
-function lerpAngle(from: number, to: number, t: number) { return from + wrapAngle(to - from) * t; }
+function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3); }
