@@ -52,17 +52,20 @@ function playDiceTone(kind: "roll" | "reveal" | "critical") {
   }
 }
 
-export function DicePanel({ rolls, onLog, visibility, onVisibilityChange }: {
+export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVisibilityChange }: {
   rolls: CloudRoll[];
-  visibility: RollVisibility;
-  onVisibilityChange: (visibility: RollVisibility) => void;
+  visibility?: RollVisibility;
+  onVisibilityChange?: (visibility: RollVisibility) => void;
   onLog: (data: { label: string; formula: string; payload: Record<string, unknown>; total: number; visibility: RollVisibility }) => Promise<void>;
 }) {
   const [formula, setFormula] = useState("1d20");
+  const [localVisibility, setLocalVisibility] = useState<RollVisibility>("PUBLICA");
   const [last, setLast] = useState<FormulaRoll | null>(null);
   const [animated, setAnimated] = useState<AnimatedFormulaRoll | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(storedSoundEnabled);
   const [error, setError] = useState("");
+  const visibility = controlledVisibility ?? localVisibility;
+  const setVisibility = (value: RollVisibility) => onVisibilityChange ? onVisibilityChange(value) : setLocalVisibility(value);
 
   const toggleSound = () => {
     const next = !soundEnabled;
@@ -87,8 +90,8 @@ export function DicePanel({ rolls, onLog, visibility, onVisibilityChange }: {
         <div className="flex flex-wrap items-start gap-3">
           <div className="min-w-0 flex-1"><p className="stamp text-primary">Rolador 3D</p><h2 className="font-display text-2xl">Dados</h2><p className="mt-1 max-w-xl text-xs text-muted-foreground">Toda rolagem usa o resultado real primeiro e depois mostra a animação 3D. O visual nunca altera o número sorteado.</p></div>
           <div className="flex flex-wrap justify-end gap-1.5">
-            <Button size="sm" variant={visibility === "PUBLICA" ? "default" : "outline"} onClick={() => onVisibilityChange("PUBLICA")}><Eye className="mr-1 size-3.5"/>Pública</Button>
-            <Button size="sm" variant={visibility === "PRIVADA" ? "default" : "outline"} onClick={() => onVisibilityChange("PRIVADA")}><Lock className="mr-1 size-3.5"/>Privada</Button>
+            <Button size="sm" variant={visibility === "PUBLICA" ? "default" : "outline"} onClick={() => setVisibility("PUBLICA")}><Eye className="mr-1 size-3.5"/>Pública</Button>
+            <Button size="sm" variant={visibility === "PRIVADA" ? "default" : "outline"} onClick={() => setVisibility("PRIVADA")}><Lock className="mr-1 size-3.5"/>Privada</Button>
             <Button size="sm" variant="ghost" aria-label={soundEnabled ? "Desativar som dos dados" : "Ativar som dos dados"} title={soundEnabled ? "Som dos dados ligado" : "Som dos dados desligado"} onClick={toggleSound}>{soundEnabled ? <Volume2 className="size-4"/> : <VolumeX className="size-4"/>}<span className="hidden sm:inline">Som</span></Button>
           </div>
         </div>
