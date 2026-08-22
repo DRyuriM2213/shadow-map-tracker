@@ -71,7 +71,7 @@ function findAmmo(sheet: CharacterSheetData, ammoName: string) {
   const matches = sheet.inventory.filter((item) => {
     if (item.quantity <= 0) return false;
     const haystack = normalize(`${item.name} ${item.category} ${item.notes}`);
-    return haystack.includes(needle) || tokens.some((token) => haystack.includes(token));
+    return haystack.includes(needle) || (tokens.length > 0 && tokens.every((token) => haystack.includes(token)));
   });
   return { quantity: matches.reduce((sum, item) => sum + Math.max(0, Number(item.quantity) || 0), 0), names: matches.map((item) => item.name).filter(Boolean) };
 }
