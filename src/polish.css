@@ -21,18 +21,18 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: .16;
+  opacity: .13;
   background-image:
-    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+  background-size: 52px 52px;
   mask-image: linear-gradient(to bottom, #000, transparent 78%);
 }
 
 .dossier {
   position: relative;
   overflow: hidden;
-  border-radius: 14px !important;
+  border-radius: 16px !important;
   border-color: var(--panel-border) !important;
   background:
     linear-gradient(145deg, var(--panel-highlight), transparent 34%),
@@ -57,7 +57,7 @@ body::before {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 textarea,
 select {
-  border-radius: 9px !important;
+  border-radius: 10px !important;
   background-color: color-mix(in oklch, var(--color-background) 78%, transparent) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
 }
@@ -104,7 +104,7 @@ select:focus {
 
 .master-nav a {
   border: 1px solid transparent;
-  border-radius: 8px !important;
+  border-radius: 9px !important;
   padding-inline: .78rem;
   transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
@@ -137,7 +137,7 @@ select:focus {
 }
 
 .stat-tile {
-  border-radius: 10px !important;
+  border-radius: 11px !important;
   border: 1px solid color-mix(in oklch, var(--color-border) 78%, transparent) !important;
   background: linear-gradient(145deg, rgba(255,255,255,.02), transparent), color-mix(in oklch, var(--color-secondary) 52%, transparent) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
@@ -150,18 +150,222 @@ select:focus {
 }
 
 .player-terminal-card {
-  border-radius: 16px !important;
-  border-color: rgba(255,255,255,.1) !important;
-  background: linear-gradient(155deg, rgba(255,255,255,.045), transparent 35%), rgba(3,5,8,.84) !important;
-  box-shadow: 0 28px 90px -46px #000;
+  border-radius: 18px !important;
+  border-color: rgba(255,255,255,.085) !important;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.036), transparent 32%),
+    rgba(3,5,8,.78) !important;
+  box-shadow: 0 24px 70px -48px #000, inset 0 1px 0 rgba(255,255,255,.022);
+  backdrop-filter: blur(14px);
 }
+
+.player-terminal-card:hover {
+  border-color: color-mix(in oklch, var(--color-primary) 24%, rgba(255,255,255,.1)) !important;
+}
+
+/* ---------------------------- Dramatic dice overlay ---------------------------- */
+.dice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+.dice-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in oklch, var(--color-primary) 15%, transparent), transparent 35%),
+    rgba(0,0,0,.72);
+  backdrop-filter: blur(10px) saturate(80%);
+  animation: dice-backdrop-in .24s ease-out both;
+}
+
+.dice-arena {
+  position: relative;
+  width: min(92vw, 520px);
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--color-primary) 36%, rgba(255,255,255,.11));
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 34%, color-mix(in oklch, var(--color-primary) 11%, transparent), transparent 42%),
+    linear-gradient(160deg, rgba(255,255,255,.05), transparent 30%),
+    rgba(5,7,10,.95);
+  box-shadow: 0 40px 120px -48px #000, inset 0 1px 0 rgba(255,255,255,.04);
+  padding: 1.35rem;
+  text-align: center;
+  pointer-events: auto;
+  animation: dice-arena-in .3s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.dice-overlay.is-critical .dice-arena {
+  border-color: color-mix(in oklch, var(--color-route-amarelo) 58%, rgba(255,255,255,.1));
+  background:
+    radial-gradient(circle at 50% 32%, color-mix(in oklch, var(--color-route-amarelo) 17%, transparent), transparent 46%),
+    linear-gradient(160deg, rgba(255,255,255,.055), transparent 30%),
+    rgba(7,6,5,.96);
+}
+
+.dice-close {
+  position: absolute;
+  top: .8rem;
+  right: .8rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 10px;
+  background: rgba(255,255,255,.035);
+  color: color-mix(in oklch, var(--color-foreground) 72%, transparent);
+  cursor: pointer;
+}
+
+.dice-kicker {
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+  color: var(--color-primary);
+}
+
+.dice-overlay.is-critical .dice-kicker { color: var(--color-route-amarelo); }
+.dice-title { margin-top: .35rem; font-family: var(--font-display, inherit); font-size: clamp(1.25rem, 4vw, 1.8rem); font-weight: 700; }
+.dice-formula { margin-top: .25rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; color: color-mix(in oklch, var(--color-foreground) 48%, transparent); }
+
+.dice-main-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  margin-top: .3rem;
+  perspective: 900px;
+}
+
+.dice-poly {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 132px;
+  aspect-ratio: 1;
+  clip-path: polygon(50% 0%, 88% 17%, 100% 55%, 75% 92%, 28% 100%, 0% 66%, 7% 23%);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 60%, rgba(255,255,255,.2));
+  background:
+    linear-gradient(132deg, rgba(255,255,255,.16) 0 12%, transparent 13% 42%, rgba(255,255,255,.055) 43% 55%, transparent 56%),
+    linear-gradient(35deg, color-mix(in oklch, var(--color-primary) 25%, #11151b), #090b0f 62%);
+  box-shadow: inset 0 0 38px rgba(255,255,255,.03), 0 32px 60px -32px color-mix(in oklch, var(--color-primary) 55%, #000);
+  transform-style: preserve-3d;
+}
+
+.dice-poly::before,
+.dice-poly::after {
+  content: "";
+  position: absolute;
+  inset: 18% 12%;
+  clip-path: polygon(50% 0%,100% 100%,0% 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  opacity: .8;
+}
+.dice-poly::after { transform: rotate(62deg) scale(.82); opacity: .45; }
+
+.dice-poly strong {
+  position: relative;
+  z-index: 2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 3rem;
+  line-height: 1;
+  text-shadow: 0 4px 18px rgba(0,0,0,.75);
+}
+
+.dice-side-label {
+  position: absolute;
+  top: 26px;
+  z-index: 2;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: color-mix(in oklch, var(--color-foreground) 48%, transparent);
+}
+
+.dice-overlay.is-rolling .dice-poly {
+  animation: dice-tumble .86s cubic-bezier(.16,.75,.2,1) both;
+}
+.dice-overlay.is-rolling .dice-poly strong { filter: blur(1px); }
+.dice-overlay.is-revealed .dice-poly { animation: dice-land .36s cubic-bezier(.2,.9,.2,1) both; }
+.dice-overlay.is-critical.is-revealed .dice-poly { animation: dice-land .36s cubic-bezier(.2,.9,.2,1) both, dice-critical-pulse .9s .35s ease-out both; }
+
+.dice-shockwave {
+  position: absolute;
+  width: 145px;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in oklch, var(--color-primary) 40%, transparent);
+  border-radius: 999px;
+  opacity: 0;
+}
+.dice-overlay.is-revealed .dice-shockwave { animation: dice-shock .7s ease-out both; }
+.dice-overlay.is-critical .dice-shockwave { border-color: color-mix(in oklch, var(--color-route-amarelo) 58%, transparent); }
+
+.dice-result-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .7rem;
+  margin-top: -.35rem;
+}
+.dice-result-row b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: clamp(2.3rem, 8vw, 3.5rem); letter-spacing: -.04em; }
+.dice-result-label { font-size: .62rem; font-weight: 800; letter-spacing: .17em; color: color-mix(in oklch, var(--color-foreground) 42%, transparent); }
+.dice-modifier { border: 1px solid rgba(255,255,255,.09); border-radius: 999px; padding: .2rem .45rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; color: color-mix(in oklch, var(--color-foreground) 60%, transparent); }
+
+.dice-individuals {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .4rem;
+  margin-top: .7rem;
+}
+.dice-individuals span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 34px;
+  gap: .18rem;
+  border: 1px solid rgba(255,255,255,.085);
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+}
+.dice-individuals span.is-chosen { border-color: color-mix(in oklch, var(--color-primary) 62%, transparent); background: color-mix(in oklch, var(--color-primary) 12%, transparent); }
+.dice-individuals small { font-size: .5rem; color: color-mix(in oklch, var(--color-foreground) 40%, transparent); }
+.dice-note { margin: .9rem auto 0; max-width: 420px; border: 1px solid color-mix(in oklch, var(--color-primary) 25%, rgba(255,255,255,.08)); border-radius: 12px; background: color-mix(in oklch, var(--color-primary) 7%, transparent); padding: .65rem .8rem; font-size: .72rem; color: color-mix(in oklch, var(--color-foreground) 70%, transparent); }
+
+@keyframes dice-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dice-arena-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes dice-tumble {
+  0% { transform: translateY(-74px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(.62); opacity: .35; }
+  32% { transform: translateY(10px) rotateX(210deg) rotateY(145deg) rotateZ(90deg) scale(.9); opacity: 1; }
+  67% { transform: translateY(-16px) rotateX(395deg) rotateY(330deg) rotateZ(248deg) scale(1.03); }
+  100% { transform: translateY(0) rotateX(540deg) rotateY(480deg) rotateZ(360deg) scale(1); }
+}
+@keyframes dice-land { 0% { transform: translateY(-8px) scale(.96); } 65% { transform: translateY(3px) scale(1.04); } 100% { transform: translateY(0) scale(1); } }
+@keyframes dice-shock { 0% { transform: scale(.78); opacity: .65; } 100% { transform: scale(1.75); opacity: 0; } }
+@keyframes dice-critical-pulse { 0% { filter: brightness(1); } 45% { filter: brightness(1.5); } 100% { filter: brightness(1); } }
 
 @media (max-width: 640px) {
   body { background-attachment: scroll; }
-  .dossier { border-radius: 11px !important; }
+  .dossier { border-radius: 12px !important; }
   .master-header { backdrop-filter: blur(14px); }
+  .dice-arena { width: min(96vw, 520px); border-radius: 20px; padding: 1.1rem; }
+  .dice-main-wrap { min-height: 170px; }
+  .dice-poly { width: 118px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .master-nav a, .dossier { transition: none !important; }
+  .dice-overlay-backdrop, .dice-arena, .dice-poly, .dice-shockwave { animation: none !important; }
+  .dice-overlay.is-rolling .dice-poly { transform: none !important; }
 }
