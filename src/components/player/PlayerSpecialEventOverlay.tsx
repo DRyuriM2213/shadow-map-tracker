@@ -20,7 +20,17 @@ export function PlayerSpecialEventOverlay({ kind, title, body, onSound, onLater,
   onAcknowledge: () => void;
 }) {
   const meta=META[kind], Icon=meta.icon;
-  useEffect(()=>{onSound();},[]);
+  useEffect(()=>{
+    onSound();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onLater(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  },[onLater,onSound]);
   return <div className={"special-event-overlay "+kind.toLowerCase()} role="dialog" aria-modal="true" aria-label={title}>
     <div className="special-event-scan" aria-hidden="true"/>
     <button className="special-event-close" onClick={onLater} aria-label="Fechar por enquanto"><X className="size-4"/></button>
