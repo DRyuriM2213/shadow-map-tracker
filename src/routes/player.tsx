@@ -243,7 +243,7 @@ function PlayerPage() {
       <div key={tab} className="player-page-transition">
         {tab==="inicio"&&<Home data={data} state={state} onTab={openTab} onDice={openDice} onCombat={openCombat} onSettings={()=>setSettingsOpen(true)} onReplay={()=>setShowIntro(true)} skipIntro={skipIntro} onSkipIntroChange={updateIntroPreference} onRead={markNotification}/>}
         {tab==="ficha"&&<CharacterSheetPanel sheet={sheet} editable={!preview&&data.profile.canEditSheet} saveStatus={saveStatus} focusTarget={sheetFocus} onFocusConsumed={()=>setSheetFocus(null)} onChange={updateSheet} onRollAttribute={rollAttribute} onRollSkill={rollSkill} onRollAttack={rollAttack} onRollDamage={rollDamage}/>}
-        {tab==="investigacao"&&<Investigation view={investigationView} onView={setInvestigationView} data={data} preview={preview} onRefresh={()=>refresh(true)}/>}
+        {tab==="investigacao"&&<Investigation view={investigationView} onView={openInvestigationView} data={data} preview={preview} onRefresh={()=>refresh(true)} onSound={playSound}/>}
         {tab==="mapa"&&<FogMap playerId={data.profile.id} regions={data.mapRegions} reveals={data.mapReveals} assets={data.assets}/>}
       </div>
     </main>
