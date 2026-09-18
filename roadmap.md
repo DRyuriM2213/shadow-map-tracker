@@ -4,3 +4,4 @@
 - [ ] Implementar convite de Transcendência mestre/player
 - [ ] Redesenhar criação e agrupamento interno da ficha
 - [ ] Validar desktop/mobile, build e tipos
+- [ ] Não publicar antes da revisão do usuário
