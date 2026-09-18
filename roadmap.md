@@ -1,0 +1,6 @@
+- [ ] Mapear experiência atual de /player e /players
+- [ ] Implementar preferências visuais e áudio local por player
+- [ ] Redesenhar navegação, início, investigação e dados em /player
+- [ ] Implementar convite de Transcendência mestre/player
+- [ ] Redesenhar criação e agrupamento interno da ficha
+- [ ] Validar desktop/mobile, build e tipos
