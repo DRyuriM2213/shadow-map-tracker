@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye, FileWarning, Goal, Radio, X } from "lucide-react";
 
@@ -20,17 +20,21 @@ export function PlayerSpecialEventOverlay({ kind, title, body, onSound, onLater,
   onAcknowledge: () => void;
 }) {
   const meta=META[kind], Icon=meta.icon;
+  const soundRef=useRef(onSound);
+  const laterRef=useRef(onLater);
+  soundRef.current=onSound;
+  laterRef.current=onLater;
   useEffect(()=>{
-    onSound();
+    soundRef.current();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onLater(); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") laterRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
-  },[onLater,onSound]);
+  },[]);
   return <div className={"special-event-overlay "+kind.toLowerCase()} role="dialog" aria-modal="true" aria-label={title}>
     <div className="special-event-scan" aria-hidden="true"/>
     <button className="special-event-close" onClick={onLater} aria-label="Fechar por enquanto"><X className="size-4"/></button>
