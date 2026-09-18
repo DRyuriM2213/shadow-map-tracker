@@ -22,9 +22,14 @@ export function InvestigationBoard({ profileId, clues, documents, notes, readOnl
       ...documents.map((d) => ({ id: "doc:"+d.id, title: d.title, type: "DOCUMENTO" as const })),
       ...notes.map((n) => ({ id: "note:"+n.id, title: n.title || "Nota", type: "NOTA" as const })),
     ];
-    return source.slice(0, 18).map((node, index) => {
+    const visible = source.slice(0, 18);
+    const rows = Math.max(1, Math.ceil(visible.length / 3));
+    const rowGap = rows <= 1 ? 0 : 76 / (rows - 1);
+    return visible.map((node, index) => {
       const col = index % 3, row = Math.floor(index / 3);
-      return { ...node, x: 13 + col * 34 + (row % 2 ? 4 : 0), y: 12 + row * 23 };
+      const xBase = [16, 50, 84][col] ?? 50;
+      const jitter = row % 2 === 0 ? 0 : col === 1 ? 2 : -2;
+      return { ...node, x: Math.max(12, Math.min(88, xBase + jitter)), y: 12 + row * rowGap };
     });
   }, [clues, documents, notes]);
 
@@ -49,6 +54,8 @@ export function InvestigationBoard({ profileId, clues, documents, notes, readOnl
     setSelected(null);
   };
 
+  const validIds = new Set(nodes.map((node) => node.id));
+  const visibleEdges = edges.filter((edge) => validIds.has(edge.a) && validIds.has(edge.b));
   const nodeMap = new Map(nodes.map((node) => [node.id,node]));
   return <section className="investigation-board-shell">
     <div className="investigation-board-heading">
@@ -57,8 +64,8 @@ export function InvestigationBoard({ profileId, clues, documents, notes, readOnl
     </div>
     <div className="investigation-board">
       <div className="board-noise" aria-hidden="true"/>
-      <svg className="board-lines" viewBox="0 0 100 150" preserveAspectRatio="none" aria-hidden="true">
-        {edges.map((edge,index)=>{
+      <svg className="board-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {visibleEdges.map((edge,index)=>{
           const a=nodeMap.get(edge.a),b=nodeMap.get(edge.b); if(!a||!b)return null;
           return <line key={index} x1={a.x} y1={a.y} x2={b.x} y2={b.y} vectorEffect="non-scaling-stroke"/>;
         })}
