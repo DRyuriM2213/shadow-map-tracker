@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { playSoundFx, unlockSoundFx } from "@/lib/soundFx";
 
 export type PlayerIntensity = "sobrio" | "paranormal";
 export type PlayerVisualStyle = "operacao" | "arquivo" | "ocultista" | "minimalista";
@@ -50,16 +51,14 @@ export function usePlayerPreferences(profileId: string, readOnly: boolean) {
   return [preferences, setPreferences] as const;
 }
 
-export type PlayerSound = "navigate" | "click" | "notify" | "dice" | "impact" | "transcend";
+export type PlayerSound = "navigate" | "click" | "open" | "paper" | "notify" | "dice" | "impact" | "critical" | "combat" | "transcend";
 
 export function usePlayerAudio(preferences: PlayerPreferences) {
-  const context = useRef<AudioContext | null>(null);
   const unlock = useCallback(() => {
     if (!preferences.sound || typeof window === "undefined") return null;
-    context.current ??= new AudioContext();
-    if (context.current.state === "suspended") void context.current.resume();
-    return context.current;
+    return unlockSoundFx();
   }, [preferences.sound]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onFirstGesture = () => { unlock(); };
@@ -72,18 +71,25 @@ export function usePlayerAudio(preferences: PlayerPreferences) {
   }, [unlock]);
 
   const play = useCallback((kind: PlayerSound) => {
-    const audio = unlock(); if (!audio || !preferences.sound) return;
-    const now = audio.currentTime;
-    const categoryVolume = kind === "dice" || kind === "impact" ? preferences.diceVolume : kind === "transcend" || kind === "notify" ? preferences.eventVolume : preferences.uiVolume;
-    const tones: Array<[number, number]> = kind === "transcend" ? [[52, .45], [79, .55], [117, .7]] : kind === "impact" ? [[72, .18], [48, .24]] : kind === "dice" ? [[110, .13], [76, .2]] : kind === "notify" ? [[420, .1], [620, .16]] : kind === "navigate" ? [[260, .07]] : [[340, .055]];
-    tones.forEach(([frequency, duration], index) => {
-      const oscillator = audio.createOscillator(), gain = audio.createGain(), start = now + index * .07;
-      oscillator.type = kind === "transcend" ? "sawtooth" : kind === "dice" || kind === "impact" ? "triangle" : "sine";
-      oscillator.frequency.setValueAtTime(frequency, start);
-      if (kind === "transcend") oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.7, start + duration);
-      gain.gain.setValueAtTime(.0001, start); gain.gain.exponentialRampToValueAtTime(Math.max(.002, preferences.volume * categoryVolume * .09), start + .012); gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
-      oscillator.connect(gain); gain.connect(audio.destination); oscillator.start(start); oscillator.stop(start + duration + .02);
-    });
-  }, [preferences.sound, preferences.volume, preferences.uiVolume, preferences.diceVolume, preferences.eventVolume, unlock]);
+    if (!preferences.sound) return;
+    const categoryVolume = kind === "dice" || kind === "impact" || kind === "critical"
+      ? preferences.diceVolume
+      : kind === "transcend" || kind === "notify"
+        ? preferences.eventVolume
+        : preferences.uiVolume;
+    const volume = preferences.volume * categoryVolume;
+    const fx = kind === "navigate" ? "ui-navigate"
+      : kind === "click" ? "ui-click"
+      : kind === "open" ? "ui-open"
+      : kind === "paper" ? "paper"
+      : kind === "notify" ? "notify"
+      : kind === "dice" ? "dice-roll"
+      : kind === "impact" ? "dice-impact"
+      : kind === "critical" ? "dice-critical"
+      : kind === "combat" ? "combat-enter"
+      : "paranormal";
+    playSoundFx(fx, volume);
+  }, [preferences.sound, preferences.volume, preferences.uiVolume, preferences.diceVolume, preferences.eventVolume]);
+
   return { play, unlock };
 }

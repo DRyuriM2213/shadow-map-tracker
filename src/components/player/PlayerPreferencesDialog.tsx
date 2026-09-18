@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { PLAYER_ACCENTS, type PlayerPreferences } from "@/hooks/usePlayerExperience";
+import { playSoundFx, unlockSoundFx } from "@/lib/soundFx";
 import { Check, FileText, Flame, MonitorCog, Sparkles, Volume2, VolumeX } from "lucide-react";
 
 const VISUAL_STYLES = [
@@ -23,6 +24,11 @@ export function PlayerPreferencesDialog({ open, onOpenChange, preferences, onCha
         <Volume label="Interface" value={preferences.uiVolume} disabled={readOnly||!preferences.sound} onChange={(value)=>onChange({...preferences,uiVolume:value})}/>
         <Volume label="Dados" value={preferences.diceVolume} disabled={readOnly||!preferences.sound} onChange={(value)=>onChange({...preferences,diceVolume:value})}/>
         <Volume label="Eventos paranormais" value={preferences.eventVolume} disabled={readOnly||!preferences.sound} onChange={(value)=>onChange({...preferences,eventVolume:value})}/>
+        <div className="audio-test-row">
+          <Button type="button" size="sm" variant="ghost" disabled={!preferences.sound} onClick={()=>{unlockSoundFx();playSoundFx("ui-open",preferences.volume*preferences.uiVolume);}}>Testar UI</Button>
+          <Button type="button" size="sm" variant="ghost" disabled={!preferences.sound} onClick={()=>{unlockSoundFx();playSoundFx("dice-roll",preferences.volume*preferences.diceVolume);window.setTimeout(()=>playSoundFx("dice-impact",preferences.volume*preferences.diceVolume),650);}}>Testar dado</Button>
+          <Button type="button" size="sm" variant="ghost" disabled={!preferences.sound} onClick={()=>{unlockSoundFx();playSoundFx("paranormal",preferences.volume*preferences.eventVolume);}}>Testar paranormal</Button>
+        </div>
       </div>
       {readOnly && <p className="rounded-xl border border-route-amarelo/30 bg-route-amarelo/5 p-3 text-xs text-route-amarelo">A prévia do mestre não salva preferências.</p>}
     </div>

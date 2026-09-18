@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { availableAttacks, combatDefense } from "@/data/combatRules";
 import { TRAINING_BONUS, type CharacterSheetData } from "@/data/ordemRules";
@@ -15,6 +16,17 @@ export function PlayerCombatMode({ sheet, onClose, onRollAttack, onRollDamage, o
   const hp = percent(sheet.resources.pv, sheet.resources.pvMax);
   const pe = percent(sheet.resources.pe, sheet.resources.peMax);
   const san = percent(sheet.resources.san, sheet.resources.sanMax);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
 
   return <div className="combat-mode-overlay" role="dialog" aria-modal="true" aria-label="Modo Combate">
     <div className="combat-mode-grid" aria-hidden="true"/>

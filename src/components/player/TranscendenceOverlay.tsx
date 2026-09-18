@@ -4,7 +4,20 @@ import { Eye, Radio, X } from "lucide-react";
 
 export function TranscendenceOverlay({ title, body, onAnswer, onLater, onSound }: { title: string; body: string; onAnswer: () => void; onLater: () => void; onSound: () => void }) {
   const soundRef = useRef(onSound);
-  useEffect(() => { soundRef.current(); }, []);
+  const laterRef = useRef(onLater);
+  soundRef.current = onSound;
+  laterRef.current = onLater;
+  useEffect(() => {
+    soundRef.current();
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") laterRef.current(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, []);
   return <div className="transcendence-overlay" role="dialog" aria-modal="true" aria-labelledby="transcendence-title">
     <div className="transcendence-interference" aria-hidden="true"/><div className="transcendence-vignette" aria-hidden="true"/>
     <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16 text-center">
