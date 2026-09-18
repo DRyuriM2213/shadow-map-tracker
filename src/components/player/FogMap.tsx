@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MAP_IMAGES, type FloorId } from "@/data/map";
 import { useAsset } from "@/lib/useAsset";
 import type { MapRegion, MapReveal, SharedAsset } from "@/lib/playerCloudTypes";
 import { decodeManualRevealLocationId, regionLocationId, revealLocationId, revealTargetId } from "@/lib/playerCloudTypes";
-import { AlertTriangle, Eye, Map as MapIcon } from "lucide-react";
+import { AlertTriangle, Eye, Maximize2, Map as MapIcon } from "lucide-react";
 
 const clampPercent = (value: number) => Math.max(0, Math.min(100, value));
 
@@ -13,6 +13,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
   const [imageReady, setImageReady] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [sharedAssetFailed, setSharedAssetFailed] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
   const localImage = useAsset(`map:${floor}:limpo`);
 
   const asset = (key: string) => assets.find(a => (a.assetKey ?? a.asset_key) === key)?.publicUrl ?? assets.find(a => (a.assetKey ?? a.asset_key) === key)?.public_url;
@@ -32,12 +33,8 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
 
   const visible = useMemo(() => {
     const map = new Map<string, boolean>();
-    for (const reveal of reveals.filter(r => r.floor === floor && !revealTargetId(r))) {
-      map.set(revealLocationId(reveal), reveal.revealed);
-    }
-    for (const reveal of reveals.filter(r => r.floor === floor && revealTargetId(r) === playerId)) {
-      map.set(revealLocationId(reveal), reveal.revealed);
-    }
+    for (const reveal of reveals.filter(r => r.floor === floor && !revealTargetId(r))) map.set(revealLocationId(reveal), reveal.revealed);
+    for (const reveal of reveals.filter(r => r.floor === floor && revealTargetId(r) === playerId)) map.set(revealLocationId(reveal), reveal.revealed);
     return map;
   }, [reveals, floor, playerId]);
 
@@ -59,16 +56,7 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
 
       const decoded = decodeManualRevealLocationId(locationId);
       if (!decoded || decoded.floor !== floor) continue;
-      result.push({
-        id: locationId,
-        floor: decoded.floor,
-        locationId,
-        label: "Área liberada pelo mestre",
-        x: decoded.x,
-        y: decoded.y,
-        width: decoded.width,
-        height: decoded.height,
-      });
+      result.push({ id: locationId, floor: decoded.floor, locationId, label: "Área liberada pelo mestre", x: decoded.x, y: decoded.y, width: decoded.width, height: decoded.height });
     }
     return result;
   }, [regions, floor, visible]);
@@ -91,22 +79,36 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
     setImageFailed(true);
   };
 
-  const sourceLabel = usingSharedImage ? "asset compartilhado" : usingLocalImage ? "asset restaurado neste navegador" : "fallback estático";
+  const enterFullscreen = async () => {
+    if (!mapRef.current || !mapRef.current.requestFullscreen) return;
+    try { await mapRef.current.requestFullscreen(); } catch { /* fullscreen pode ser bloqueado pelo navegador */ }
+  };
 
-  return <section className="space-y-4">
-    <div className="flex flex-wrap items-center gap-2">
-      <div>
+  const sourceLabel = usingSharedImage ? "asset compartilhado" : usingLocalImage ? "asset restaurado neste navegador" : "fallback estático";
+  const floorLabel = floor === "primeiro" ? "Térreo" : "Andar superior";
+
+  return <section className="space-y-4" aria-labelledby="player-map-title">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="min-w-0 flex-1">
         <p className="stamp text-primary">Cartografia operacional</p>
-        <h2 className="font-display text-2xl">Mapa conhecido</h2>
-        <p className="text-xs text-muted-foreground">Somente as áreas desenhadas e liberadas pelo mestre aparecem. Novas áreas chegam automaticamente.</p>
+        <h2 id="player-map-title" className="font-display text-2xl">Mapa conhecido</h2>
+        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">Somente as áreas desenhadas e liberadas pelo mestre aparecem. Novas áreas chegam automaticamente.</p>
       </div>
-      <div className="ml-auto flex gap-2">
-        <Button size="sm" variant={floor === "primeiro" ? "default" : "outline"} onClick={() => setFloor("primeiro")}>Térreo</Button>
-        <Button size="sm" variant={floor === "superior" ? "default" : "outline"} onClick={() => setFloor("superior")}>Andar superior</Button>
+      <div className="grid grid-cols-2 gap-1 rounded-xl border border-border bg-card/60 p-1" role="tablist" aria-label="Piso do mapa">
+        <Button size="sm" role="tab" aria-selected={floor === "primeiro"} variant={floor === "primeiro" ? "default" : "ghost"} onClick={() => setFloor("primeiro")}>Térreo</Button>
+        <Button size="sm" role="tab" aria-selected={floor === "superior"} variant={floor === "superior" ? "default" : "ghost"} onClick={() => setFloor("superior")}>Superior</Button>
       </div>
     </div>
 
-    <div className="player-terminal-card relative min-h-[360px] overflow-hidden border bg-black shadow-2xl">
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/35 px-3 py-2 text-xs text-muted-foreground" aria-live="polite">
+      <Eye className="size-3.5 shrink-0" />
+      <span><b className="text-foreground">{floorLabel}:</b> {safeRegions.length} área(s) visível(is).</span>
+      <span className="hidden sm:inline">·</span>
+      <span>{imageFailed ? "planta indisponível" : imageReady ? `planta carregada via ${sourceLabel}` : "carregando planta…"}</span>
+      <Button type="button" size="sm" variant="ghost" className="ml-auto h-7 px-2" onClick={enterFullscreen} aria-label="Abrir mapa em tela cheia"><Maximize2 className="mr-1 size-3.5"/>Tela cheia</Button>
+    </div>
+
+    <div ref={mapRef} className="player-terminal-card relative min-h-[320px] overflow-hidden border bg-black shadow-2xl sm:min-h-[420px]" aria-busy={!imageReady && !imageFailed}>
       <img
         key={`sizer-${floor}-${image}`}
         src={image}
@@ -118,45 +120,17 @@ export function FogMap({ playerId, regions, reveals, assets }: { playerId: strin
         onError={handleImageError}
       />
 
+      {!imageReady && !imageFailed && <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-zinc-500"><MapIcon className="size-10 animate-pulse"/><p className="mt-3 font-mono text-xs tracking-widest">CARREGANDO PLANTA</p><p className="mt-1 text-[11px]">As áreas liberadas serão exibidas assim que a imagem estiver pronta.</p></div>}
+
       {imageReady && safeRegions.map(region => (
-        <div
-          key={`${floor}-${region.id}`}
-          className="absolute overflow-hidden bg-black ring-1 ring-white/10"
-          style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }}
-        >
-          <img
-            src={image}
-            alt=""
-            aria-hidden
-            draggable={false}
-            className="pointer-events-none absolute max-w-none select-none"
-            style={{ width: `${10000 / region.width}%`, height: `${10000 / region.height}%`, left: `${-(region.x / region.width) * 100}%`, top: `${-(region.y / region.height) * 100}%` }}
-          />
+        <div key={`${floor}-${region.id}`} className="absolute overflow-hidden bg-black ring-1 ring-white/10" style={{ left: `${region.x}%`, top: `${region.y}%`, width: `${region.width}%`, height: `${region.height}%` }}>
+          <img src={image} alt="" aria-hidden draggable={false} className="pointer-events-none absolute max-w-none select-none" style={{ width: `${10000 / region.width}%`, height: `${10000 / region.height}%`, left: `${-(region.x / region.width) * 100}%`, top: `${-(region.y / region.height) * 100}%` }}/>
         </div>
       ))}
 
-      {imageFailed && (
-        <div className="map-recovery-panel absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-amber-200">
-          <div className="flex size-14 items-center justify-center rounded-2xl border border-amber-500/25 bg-amber-500/10"><AlertTriangle className="size-7" /></div>
-          <p className="mt-4 font-semibold text-zinc-100">Planta aguardando restauração</p>
-          <p className="mt-1 max-w-lg text-xs leading-relaxed text-zinc-400">As áreas liberadas continuam preservadas no Cloud. O terminal tentou o asset compartilhado, um asset local validado e a planta estática; nenhuma fonte válida está disponível neste momento.</p>
-          <p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-amber-300/80">Fog preservado · nenhuma coordenada foi perdida</p>
-        </div>
-      )}
+      {imageFailed && <div className="map-recovery-panel absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-amber-200"><div className="flex size-14 items-center justify-center rounded-2xl border border-amber-500/25 bg-amber-500/10"><AlertTriangle className="size-7" /></div><p className="mt-4 font-semibold text-zinc-100">Planta aguardando restauração</p><p className="mt-1 max-w-lg text-xs leading-relaxed text-zinc-400">As áreas liberadas continuam preservadas no Cloud. O terminal tentou o asset compartilhado, um asset local validado e a planta estática; nenhuma fonte válida está disponível neste momento.</p><p className="mt-3 font-mono text-[10px] uppercase tracking-widest text-amber-300/80">Fog preservado · nenhuma coordenada foi perdida</p></div>}
 
-      {!imageFailed && safeRegions.length === 0 && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-zinc-500">
-          <MapIcon className="size-12" />
-          <p className="mt-3 font-mono text-sm tracking-widest">SEM ÁREAS LIBERADAS</p>
-          <p className="mt-1 text-xs">O mestre ainda não revelou nenhuma parte deste piso.</p>
-        </div>
-      )}
-    </div>
-
-    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <Eye className="size-3.5" />
-      <span>{safeRegions.length} área(s) visível(is) neste piso.</span>
-      {imageReady && <span className="text-route-verde-claro">· planta carregada via {sourceLabel}</span>}
+      {imageReady && safeRegions.length === 0 && <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center text-zinc-500"><MapIcon className="size-12" /><p className="mt-3 font-mono text-sm tracking-widest">SEM ÁREAS LIBERADAS</p><p className="mt-1 text-xs">O mestre ainda não revelou nenhuma parte deste piso.</p></div>}
     </div>
   </section>;
 }
