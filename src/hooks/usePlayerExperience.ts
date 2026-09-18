@@ -8,7 +8,8 @@ export const PLAYER_ACCENTS = [
   { name: "Violeta", value: "#8d68d8" }, { name: "Âmbar", value: "#d29832" },
   { name: "Verde", value: "#3ea878" }, { name: "Azul", value: "#4b82d0" },
 ];
-const defaults: PlayerPreferences = { accent: PLAYER_ACCENTS[1].value, intensity: "sobrio", sound: true, volume: 0.45 };
+const DEFAULT_ACCENT = "#20b8cc";
+const defaults: PlayerPreferences = { accent: DEFAULT_ACCENT, intensity: "sobrio", sound: true, volume: 0.45 };
 
 function storageKey(profileId: string) { return `berco-player-preferences:${profileId}`; }
 function readPreferences(profileId: string) {
@@ -50,7 +51,7 @@ export function usePlayerAudio(preferences: PlayerPreferences) {
   const play = useCallback((kind: PlayerSound) => {
     const audio = unlock(); if (!audio || !preferences.sound) return;
     const now = audio.currentTime;
-    const tones = kind === "transcend" ? [[52, .45], [79, .55], [117, .7]] : kind === "impact" ? [[72, .18], [48, .24]] : kind === "dice" ? [[110, .13], [76, .2]] : kind === "notify" ? [[420, .1], [620, .16]] : kind === "navigate" ? [[260, .07]] : [[340, .055]];
+    const tones: Array<[number, number]> = kind === "transcend" ? [[52, .45], [79, .55], [117, .7]] : kind === "impact" ? [[72, .18], [48, .24]] : kind === "dice" ? [[110, .13], [76, .2]] : kind === "notify" ? [[420, .1], [620, .16]] : kind === "navigate" ? [[260, .07]] : [[340, .055]];
     tones.forEach(([frequency, duration], index) => {
       const oscillator = audio.createOscillator(), gain = audio.createGain(), start = now + index * .07;
       oscillator.type = kind === "transcend" ? "sawtooth" : kind === "dice" || kind === "impact" ? "triangle" : "sine";
