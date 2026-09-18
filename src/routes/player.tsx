@@ -232,6 +232,8 @@ function PlayerPage() {
   return <div className={`player-v2-shell player-style-${preferences.visualStyle} min-h-screen ${preferences.intensity==="paranormal"?"player-v2-paranormal":"player-v2-sober"}`} style={rootStyle}>
     {showIntro&&<PlayerIntro name={data.profile.playerName} role={data.profile.roleType} symbolUrl={symbolUrl} skipFuture={skipIntro} onSkipFutureChange={updateIntroPreference} onDone={finishIntro}/>}
     {transcendence&&<TranscendenceOverlay title={transcendence.title} body={transcendence.body} onSound={()=>playSound("transcend")} onLater={()=>setTranscendDismissed(transcendence.id)} onAnswer={()=>void answerTranscendence()}/>}
+    {!transcendence&&specialEvent&&<PlayerSpecialEventOverlay kind={specialEvent.kind as SpecialEventKind} title={specialEvent.title} body={specialEvent.body} onSound={()=>playSound("transcend")} onLater={()=>setSpecialDismissed(specialEvent.id)} onAcknowledge={()=>void acknowledgeSpecial()}/>}
+    {!transcendence&&!specialEvent&&nexUnlock&&<ProgressionUnlockOverlay nex={nexUnlock.nex} unlocks={nexUnlock.unlocks} onClose={()=>setNexUnlock(null)}/>}
     <header className="player-v2-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-2xl">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5">
         <div className="player-avatar-shell flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-primary/30 bg-primary/10 text-primary">
