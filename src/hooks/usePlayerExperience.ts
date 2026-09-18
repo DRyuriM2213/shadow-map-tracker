@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type PlayerIntensity = "sobrio" | "paranormal";
-export interface PlayerPreferences { accent: string; intensity: PlayerIntensity; sound: boolean; volume: number }
+export type PlayerVisualStyle = "operacao" | "arquivo" | "ocultista" | "minimalista";
+export interface PlayerPreferences {
+  accent: string;
+  intensity: PlayerIntensity;
+  visualStyle: PlayerVisualStyle;
+  sound: boolean;
+  volume: number;
+  uiVolume: number;
+  diceVolume: number;
+  eventVolume: number;
+}
 
 export const PLAYER_ACCENTS = [
   { name: "Vinho", value: "#a83b57" }, { name: "Ciano", value: "#20b8cc" },
@@ -9,13 +19,15 @@ export const PLAYER_ACCENTS = [
   { name: "Verde", value: "#3ea878" }, { name: "Azul", value: "#4b82d0" },
 ];
 const DEFAULT_ACCENT = "#20b8cc";
-const defaults: PlayerPreferences = { accent: DEFAULT_ACCENT, intensity: "sobrio", sound: true, volume: 0.45 };
+const defaults: PlayerPreferences = { accent: DEFAULT_ACCENT, intensity: "sobrio", visualStyle: "operacao", sound: true, volume: 0.45, uiVolume: 0.75, diceVolume: 0.9, eventVolume: 1 };
 
 function storageKey(profileId: string) { return `berco-player-preferences:${profileId}`; }
 function readPreferences(profileId: string) {
   if (typeof window === "undefined") return defaults;
-  try { return { ...defaults, ...JSON.parse(localStorage.getItem(storageKey(profileId)) ?? "{}") } as PlayerPreferences; }
-  catch { return defaults; }
+  try {
+    const stored = JSON.parse(localStorage.getItem(storageKey(profileId)) ?? "{}") as Partial<PlayerPreferences>;
+    return { ...defaults, ...stored, uiVolume: stored.uiVolume ?? defaults.uiVolume, diceVolume: stored.diceVolume ?? defaults.diceVolume, eventVolume: stored.eventVolume ?? defaults.eventVolume };
+  } catch { return defaults; }
 }
 
 export function accentVariables(hex: string) {
@@ -62,15 +74,16 @@ export function usePlayerAudio(preferences: PlayerPreferences) {
   const play = useCallback((kind: PlayerSound) => {
     const audio = unlock(); if (!audio || !preferences.sound) return;
     const now = audio.currentTime;
+    const categoryVolume = kind === "dice" || kind === "impact" ? preferences.diceVolume : kind === "transcend" || kind === "notify" ? preferences.eventVolume : preferences.uiVolume;
     const tones: Array<[number, number]> = kind === "transcend" ? [[52, .45], [79, .55], [117, .7]] : kind === "impact" ? [[72, .18], [48, .24]] : kind === "dice" ? [[110, .13], [76, .2]] : kind === "notify" ? [[420, .1], [620, .16]] : kind === "navigate" ? [[260, .07]] : [[340, .055]];
     tones.forEach(([frequency, duration], index) => {
       const oscillator = audio.createOscillator(), gain = audio.createGain(), start = now + index * .07;
       oscillator.type = kind === "transcend" ? "sawtooth" : kind === "dice" || kind === "impact" ? "triangle" : "sine";
       oscillator.frequency.setValueAtTime(frequency, start);
       if (kind === "transcend") oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.7, start + duration);
-      gain.gain.setValueAtTime(.0001, start); gain.gain.exponentialRampToValueAtTime(Math.max(.002, preferences.volume * .07), start + .012); gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
+      gain.gain.setValueAtTime(.0001, start); gain.gain.exponentialRampToValueAtTime(Math.max(.002, preferences.volume * categoryVolume * .09), start + .012); gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
       oscillator.connect(gain); gain.connect(audio.destination); oscillator.start(start); oscillator.stop(start + duration + .02);
     });
-  }, [preferences.sound, preferences.volume, unlock]);
+  }, [preferences.sound, preferences.volume, preferences.uiVolume, preferences.diceVolume, preferences.eventVolume, unlock]);
   return { play, unlock };
 }
