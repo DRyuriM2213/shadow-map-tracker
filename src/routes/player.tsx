@@ -147,6 +147,14 @@ function PlayerPage() {
   },[dirty,sheet,preview,data?.profile.canEditSheet]);
 
   useEffect(()=>{if(!lastResult)return;const t=window.setTimeout(()=>setLastResult(null),6500);return()=>window.clearTimeout(t);},[lastResult]);
+  useEffect(()=>{
+    if(!diceOpen)return;
+    const previous=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    const onKey=(event:KeyboardEvent)=>{if(event.key==="Escape")setDiceOpen(false);};
+    window.addEventListener("keydown",onKey);
+    return()=>{document.body.style.overflow=previous;window.removeEventListener("keydown",onKey);};
+  },[diceOpen]);
 
   const profileId=data?.profile.id;
   useEffect(()=>{
@@ -249,7 +257,7 @@ function PlayerPage() {
     </main>
     <nav className="player-v2-bottom-nav md:hidden">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>openTab(t.id)} data-active={tab===t.id}><span className="relative"><Icon className="size-5"/>{t.id==="inicio"&&unread>0&&<i className="player-v2-dot"/>}</span><span>{t.label}</span></button>})}</nav>
     <div className="player-mobile-actions md:hidden"><button type="button" className="player-combat-fab" aria-label="Abrir modo combate" onClick={openCombat}><Swords className="size-5"/></button><button type="button" className="player-dice-fab" aria-label="Abrir dados" onClick={openDice}><Dice5 className="size-5"/></button></div>
-    {diceOpen&&<div className="player-dice-drawer" role="dialog" aria-modal="true" aria-label="Dados"><button className="player-dice-backdrop" aria-label="Fechar dados" onClick={()=>setDiceOpen(false)}/><section className="player-dice-sheet"><div className="flex items-center gap-3 border-b border-border/70 pb-3"><div><p className="stamp text-primary">Rolagens</p><h2 className="font-display text-2xl">Dados</h2></div><Button size="icon" variant="ghost" className="ml-auto" onClick={()=>setDiceOpen(false)}><X className="size-4"/></Button></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Ficha: pública</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Ficha: privada</Button></div><div className="mt-4 max-h-[72vh] overflow-y-auto pr-1"><DicePanel rolls={data.rolls} onLog={logRoll} soundEnabled={preferences.sound} soundVolume={preferences.volume*preferences.diceVolume} hideSoundToggle/></div></section></div>}
+    {diceOpen&&<div className="player-dice-drawer" role="dialog" aria-modal="true" aria-label="Dados"><button className="player-dice-backdrop" aria-label="Fechar dados" onClick={()=>setDiceOpen(false)}/><section className="player-dice-sheet"><div className="flex items-center gap-3 border-b border-border/70 pb-3"><div><p className="stamp text-primary">Rolagens</p><h2 className="font-display text-2xl">Dados</h2></div><Button size="icon" variant="ghost" className="ml-auto" onClick={()=>setDiceOpen(false)}><X className="size-4"/></Button></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Ficha: pública</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Ficha: privada</Button></div><div className="mt-4 max-h-[72vh] overflow-y-auto pr-1"><DicePanel rolls={data.rolls} onLog={logRoll} visibility={visibility} onVisibilityChange={setVisibility} soundEnabled={preferences.sound} soundVolume={preferences.volume*preferences.diceVolume} hideSoundToggle/></div></section></div>}
     <PlayerPreferencesDialog open={settingsOpen} onOpenChange={setSettingsOpen} preferences={preferences} onChange={setPreferences} readOnly={preview}/>
     <OrdemRollResult result={lastResult} soundEnabled={preferences.sound} soundVolume={preferences.volume*preferences.diceVolume}/>
   </div>;
