@@ -179,23 +179,48 @@ function PlayerPage() {
 
   const state=normalizePublicState(data.publicState);
   const unread=data.notifications.filter(n=>!(n.isRead??n.is_read)).length;
-  const theme=themeFor(data.profile.roleType);
   const symbolUrl=data.assets.find(a=>(a.assetKey??a.asset_key)==="ordem-symbol")?.publicUrl??data.assets.find(a=>(a.assetKey??a.asset_key)==="ordem-symbol")?.public_url;
+  const transcendence=data.notifications.find(n=>n.kind==="TRANSCENDENCIA"&&!(n.isRead??n.is_read)&&n.id!==transcendDismissed)??null;
+  const rootStyle=accentVariables(preferences.accent) as CSSProperties;
+  const answerTranscendence=async()=>{
+    if(!transcendence)return;
+    playSound("click");
+    if(!preview)await markNotification(transcendence.id);
+    setTranscendDismissed(transcendence.id);
+    setSheetFocus("progression");
+    setTab("ficha");
+  };
 
-  return <div className={`min-h-screen ${theme.page}`}>
-    {showIntro&&<PlayerIntro name={data.profile.playerName} role={data.profile.roleType} symbolUrl={symbolUrl} skipFuture={skipIntro} onSkipFutureChange={updateIntroPreference} onDone={finishIntro}/>} 
-    <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${theme.header}`}><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5"><div className={`flex size-10 items-center justify-center rounded-xl border ${theme.badge}`}><Shield className="size-5"/></div><div className="min-w-0"><p className="truncate font-semibold">{data.profile.characterName||data.profile.playerName}</p><p className="stamp truncate text-[9px] opacity-60">{data.profile.playerName} · {data.profile.roleType.replaceAll("_"," ")}</p></div><div className="ml-auto rounded-lg border border-white/10 bg-black/15 px-3 py-1.5 text-right"><p className="font-mono text-sm">DIA {state.day} · {state.time}</p>{state.shareLocation&&<p className="max-w-36 truncate text-[10px] opacity-60">{state.currentLocationName||"local não informado"}</p>}</div><Button size="sm" variant="ghost" aria-label={preview?"Fechar prévia":"Sair do terminal"} title={preview?"Fechar prévia":"Sair"} onClick={()=>{if(preview)window.close();else void logoutCloud().then(()=>window.location.assign("/"));}}><LogOut className="size-4"/></Button></div><nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2 sm:px-5">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>setTab(t.id)} className={`relative flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors ${tab===t.id?`${theme.active} border-white/10 shadow-sm`:"border-transparent opacity-60 hover:border-white/10 hover:bg-white/5 hover:opacity-100"}`}><Icon className="size-3.5"/>{t.label}{t.id==="inicio"&&unread>0&&<span className="ml-1 rounded-full bg-red-600 px-1.5 text-[9px] text-white">{unread}</span>}</button>})}</nav></header>
-    {preview&&<div className="sticky top-[105px] z-30 bg-route-amarelo/90 px-3 py-1 text-center text-xs font-semibold text-black">PRÉVIA DO MESTRE — somente leitura; notas privadas do player não são exibidas.</div>}
-    {pollError&&<div className="mx-auto mt-3 max-w-7xl px-3"><p className="rounded-lg border border-route-amarelo/50 bg-route-amarelo/10 p-2.5 text-xs">Cloud temporariamente sem sincronizar: {pollError}</p></div>}
-    <main className="mx-auto max-w-7xl px-3 py-4 sm:px-5 sm:py-6">
-      {tab==="inicio"&&<Home data={data} state={state} onTab={setTab} onReplay={()=>setShowIntro(true)} skipIntro={skipIntro} onSkipIntroChange={updateIntroPreference} onRead={async id=>{if(preview)return;const current=requirePlayerSession();if(!current)return;await rpc("player_mark_notification",{p_token:current.token,p_notification_id:id});await refresh(true);}}/>}
-      {tab==="ficha"&&<CharacterSheetPanel sheet={sheet} editable={!preview&&data.profile.canEditSheet} saveStatus={saveStatus} onChange={updateSheet} onRollAttribute={rollAttribute} onRollSkill={rollSkill} onRollAttack={rollAttack} onRollDamage={rollDamage}/>} 
-      {tab==="rolagens"&&<div className="space-y-3"><div className="flex justify-end gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Próximas: públicas</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Próximas: privadas</Button></div><DicePanel rolls={data.rolls} onLog={logRoll}/></div>}
-      {tab==="mapa"&&<FogMap playerId={data.profile.id} regions={data.mapRegions} reveals={data.mapReveals} assets={data.assets}/>} 
-      {tab==="pistas"&&<Clues clues={data.clues}/>} 
-      {tab==="documentos"&&<Documents documents={data.documents}/>} 
-      {tab==="anotacoes"&&<Notes notes={data.notes} preview={preview} onRefresh={()=>refresh(true)}/>} 
+  return <div className={`player-v2-shell min-h-screen ${preferences.intensity==="paranormal"?"player-v2-paranormal":"player-v2-sober"}`} style={rootStyle}>
+    {showIntro&&<PlayerIntro name={data.profile.playerName} role={data.profile.roleType} symbolUrl={symbolUrl} skipFuture={skipIntro} onSkipFutureChange={updateIntroPreference} onDone={finishIntro}/>}
+    {transcendence&&<TranscendenceOverlay title={transcendence.title} body={transcendence.body} onSound={()=>playSound("transcend")} onLater={()=>setTranscendDismissed(transcendence.id)} onAnswer={()=>void answerTranscendence()}/>}
+    <header className="player-v2-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-2xl">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5">
+        <div className="player-avatar-shell flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-primary/30 bg-primary/10 text-primary">
+          {data.profile.avatarUrl?<img src={data.profile.avatarUrl} alt="" className="size-full object-cover"/>:<Shield className="size-5"/>}
+        </div>
+        <div className="min-w-0"><p className="truncate font-semibold">{data.profile.characterName||data.profile.playerName}</p><p className="stamp truncate text-[9px] text-muted-foreground">{data.profile.playerName} · {data.profile.roleType.replaceAll("_"," ")}</p></div>
+        <div className="ml-auto hidden rounded-xl border border-border/70 bg-background/35 px-3 py-1.5 text-right sm:block"><p className="font-mono text-sm">DIA {state.day} · {state.time}</p>{state.shareLocation&&<p className="max-w-44 truncate text-[10px] text-muted-foreground">{state.currentLocationName||"local não informado"}</p>}</div>
+        <Button size="icon" variant="ghost" aria-label="Abrir dados" title="Dados" onClick={openDice}><Dice5 className="size-4"/></Button>
+        <Button size="icon" variant="ghost" aria-label="Preferências" title="Preferências" onClick={()=>{playSound("click");setSettingsOpen(true);}}><Settings2 className="size-4"/></Button>
+        <Button size="icon" variant="ghost" aria-label={preview?"Fechar prévia":"Sair do terminal"} title={preview?"Fechar prévia":"Sair"} onClick={()=>{if(preview)window.close();else void logoutCloud().then(()=>window.location.assign("/"));}}><LogOut className="size-4"/></Button>
+      </div>
+      <nav className="player-v2-desktop-nav mx-auto hidden max-w-7xl items-center gap-1 px-5 pb-3 md:flex">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>openTab(t.id)} data-active={tab===t.id} className="player-v2-nav-item"><Icon className="size-4"/><span>{t.label}</span>{t.id==="inicio"&&unread>0&&<span className="player-v2-unread">{unread}</span>}</button>})}</nav>
+    </header>
+    {preview&&<div className="sticky top-[68px] z-30 bg-route-amarelo/90 px-3 py-1 text-center text-xs font-semibold text-black">PRÉVIA DO MESTRE — somente leitura; notas privadas do player não são exibidas.</div>}
+    {pollError&&<div className="mx-auto mt-3 max-w-7xl px-3"><p className="rounded-xl border border-route-amarelo/50 bg-route-amarelo/10 p-2.5 text-xs">Cloud temporariamente sem sincronizar: {pollError}</p></div>}
+    <main className="mx-auto max-w-7xl px-3 py-4 pb-28 sm:px-5 sm:py-6 md:pb-8">
+      <div key={tab} className="player-page-transition">
+        {tab==="inicio"&&<Home data={data} state={state} onTab={openTab} onDice={openDice} onSettings={()=>setSettingsOpen(true)} onReplay={()=>setShowIntro(true)} skipIntro={skipIntro} onSkipIntroChange={updateIntroPreference} onRead={markNotification}/>}
+        {tab==="ficha"&&<CharacterSheetPanel sheet={sheet} editable={!preview&&data.profile.canEditSheet} saveStatus={saveStatus} focusTarget={sheetFocus} onFocusConsumed={()=>setSheetFocus(null)} onChange={updateSheet} onRollAttribute={rollAttribute} onRollSkill={rollSkill} onRollAttack={rollAttack} onRollDamage={rollDamage}/>}
+        {tab==="investigacao"&&<Investigation view={investigationView} onView={setInvestigationView} data={data} preview={preview} onRefresh={()=>refresh(true)}/>}
+        {tab==="mapa"&&<FogMap playerId={data.profile.id} regions={data.mapRegions} reveals={data.mapReveals} assets={data.assets}/>}
+      </div>
     </main>
+    <nav className="player-v2-bottom-nav md:hidden">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>openTab(t.id)} data-active={tab===t.id}><span className="relative"><Icon className="size-5"/>{t.id==="inicio"&&unread>0&&<i className="player-v2-dot"/>}</span><span>{t.label}</span></button>})}</nav>
+    <button type="button" className="player-dice-fab md:hidden" aria-label="Abrir dados" onClick={openDice}><Dice5 className="size-5"/></button>
+    {diceOpen&&<div className="player-dice-drawer" role="dialog" aria-modal="true" aria-label="Dados"><button className="player-dice-backdrop" aria-label="Fechar dados" onClick={()=>setDiceOpen(false)}/><section className="player-dice-sheet"><div className="flex items-center gap-3 border-b border-border/70 pb-3"><div><p className="stamp text-primary">Rolagens</p><h2 className="font-display text-2xl">Dados</h2></div><Button size="icon" variant="ghost" className="ml-auto" onClick={()=>setDiceOpen(false)}><X className="size-4"/></Button></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Ficha: pública</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Ficha: privada</Button></div><div className="mt-4 max-h-[72vh] overflow-y-auto pr-1"><DicePanel rolls={data.rolls} onLog={logRoll}/></div></section></div>}
+    <PlayerPreferencesDialog open={settingsOpen} onOpenChange={setSettingsOpen} preferences={preferences} onChange={setPreferences} readOnly={preview}/>
     <OrdemRollResult result={lastResult}/>
   </div>;
 }
