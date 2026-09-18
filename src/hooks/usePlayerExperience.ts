@@ -22,7 +22,7 @@ export function accentVariables(hex: string) {
   const valid = /^#[0-9a-f]{6}$/i.test(hex) ? hex : defaults.accent;
   const red = Number.parseInt(valid.slice(1, 3), 16), green = Number.parseInt(valid.slice(3, 5), 16), blue = Number.parseInt(valid.slice(5, 7), 16);
   const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-  return { "--primary": valid, "--ring": valid, "--primary-foreground": luminance > 0.58 ? "#101317" : "#f7f9fb" } as Record<string, string>;
+  return { "--primary": valid, "--ring": valid, "--sidebar-primary": valid, "--primary-foreground": luminance > 0.58 ? "#101317" : "#f7f9fb" } as Record<string, string>;
 }
 
 export function usePlayerPreferences(profileId: string, readOnly: boolean) {
@@ -48,6 +48,17 @@ export function usePlayerAudio(preferences: PlayerPreferences) {
     if (context.current.state === "suspended") void context.current.resume();
     return context.current;
   }, [preferences.sound]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onFirstGesture = () => { unlock(); };
+    window.addEventListener("pointerdown", onFirstGesture, { once: true, passive: true });
+    window.addEventListener("keydown", onFirstGesture, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
+  }, [unlock]);
+
   const play = useCallback((kind: PlayerSound) => {
     const audio = unlock(); if (!audio || !preferences.sound) return;
     const now = audio.currentTime;
