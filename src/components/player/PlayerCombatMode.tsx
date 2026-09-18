@@ -69,7 +69,7 @@ export function PlayerCombatMode({ sheet, onClose, onRollAttack, onRollDamage, o
 }
 
 function Vital({ icon: Icon, label, current, max, pct }: { icon: typeof HeartPulse; label: string; current: number; max: number; pct: number }) {
-  return <div className="combat-vital"><div className="flex items-center gap-2"><Icon className="size-4 text-primary"/><span>{label}</span><b className="ml-auto">{current}<small>/{max}</small></b></div><div className="combat-vital-track"><i style={{ width: pct + "%" }}/></div></div>;
+  return <div className="combat-vital" data-low={max > 0 && pct <= 25 ? "true" : "false"}><div className="flex items-center gap-2"><Icon className="size-4 text-primary"/><span>{label}</span><b className="ml-auto">{current}<small>/{max}</small></b></div><div className="combat-vital-track"><i style={{ width: pct + "%" }}/></div></div>;
 }
 function Reaction({ label, value, enabled, onClick }: { label: string; value: string; enabled: boolean; onClick?: () => void }) {
   const Tag = onClick && enabled ? "button" : "div";
