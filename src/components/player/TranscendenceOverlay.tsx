@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye, Radio, X } from "lucide-react";
 
 export function TranscendenceOverlay({ title, body, onAnswer, onLater, onSound }: { title: string; body: string; onAnswer: () => void; onLater: () => void; onSound: () => void }) {
-  useEffect(() => { onSound(); }, [onSound]);
+  const soundRef = useRef(onSound);
+  useEffect(() => { soundRef.current(); }, []);
   return <div className="transcendence-overlay" role="dialog" aria-modal="true" aria-labelledby="transcendence-title">
     <div className="transcendence-interference" aria-hidden="true"/><div className="transcendence-vignette" aria-hidden="true"/>
     <div className="relative z-10 mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16 text-center">
