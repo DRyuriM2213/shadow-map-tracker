@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,19 +8,26 @@ import { CharacterSheetPanel } from "@/components/player/CharacterSheetPanel";
 import { DicePanel, OrdemRollResult, type RollVisibility } from "@/components/player/DicePanel";
 import { FogMap } from "@/components/player/FogMap";
 import { PlayerIntro } from "@/components/player/PlayerIntro";
+import { PlayerPreferencesDialog } from "@/components/player/PlayerPreferencesDialog";
+import { TranscendenceOverlay } from "@/components/player/TranscendenceOverlay";
+import { accentVariables, usePlayerAudio, usePlayerPreferences } from "@/hooks/usePlayerExperience";
 import { SKILLS, TRAINING_BONUS, normalizeSheet, type CharacterSheetData, type OrdemAttribute } from "@/data/ordemRules";
 import { combatAttackById } from "@/data/combatRules";
 import { isCritical, parseAndRollFormula, rollOrdemTest, uid } from "@/lib/dice";
 import { cloudConfigured, getCloudSession, loginCloud, logoutCloud, requirePlayerSession, rpc } from "@/lib/cloud";
 import type { CloudDocument, CloudNotification, CloudRoll, PlayerBootstrapData, PlayerNote, PlayerRoleType } from "@/lib/playerCloudTypes";
 import { normalizePublicState } from "@/lib/playerCloudTypes";
-import { Bell, BookOpen, ClipboardList, Cloud, Dice5, FileText, LogOut, Map, NotebookPen, Settings2, Shield, UserRound } from "lucide-react";
+import { Bell, BookOpen, ClipboardList, Cloud, Dice5, FileText, LogOut, Map, NotebookPen, Search, Settings2, Shield, UserRound, X } from "lucide-react";
 
 export const Route = createFileRoute("/player")({ component: PlayerPage });
 
-type Tab = "inicio" | "ficha" | "rolagens" | "mapa" | "pistas" | "documentos" | "anotacoes";
+type Tab = "inicio" | "ficha" | "investigacao" | "mapa";
+type InvestigationView = "pistas" | "documentos" | "anotacoes";
 const TABS: Array<{id:Tab;label:string;icon:typeof Shield}> = [
-  {id:"inicio",label:"Início",icon:Shield},{id:"ficha",label:"Ficha",icon:UserRound},{id:"rolagens",label:"Rolagens",icon:Dice5},{id:"mapa",label:"Mapa",icon:Map},{id:"pistas",label:"Pistas",icon:ClipboardList},{id:"documentos",label:"Documentos",icon:FileText},{id:"anotacoes",label:"Anotações",icon:NotebookPen},
+  {id:"inicio",label:"Início",icon:Shield},
+  {id:"ficha",label:"Personagem",icon:UserRound},
+  {id:"investigacao",label:"Investigação",icon:Search},
+  {id:"mapa",label:"Mapa",icon:Map},
 ];
 
 function PlayerPage() {
@@ -42,8 +49,21 @@ function PlayerPage() {
   const [lastResult, setLastResult] = useState<null|{label:string;dice:number[];chosenIndex:number;chosen:number;bonus:number;total:number;mode:string;note?:string}>(null);
   const [visibility, setVisibility] = useState<RollVisibility>("PUBLICA");
   const [pollError, setPollError] = useState("");
+  const [investigationView, setInvestigationView] = useState<InvestigationView>("pistas");
+  const [diceOpen, setDiceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [transcendDismissed, setTranscendDismissed] = useState<string | null>(null);
+  const [sheetFocus, setSheetFocus] = useState<"progression" | null>(null);
+  const [preferences, setPreferences] = usePlayerPreferences(data?.profile.id ?? "guest", preview);
+  const { play: playSound } = usePlayerAudio(preferences);
+  const previousUnread = useRef(0);
 
   useEffect(()=>{dirtyRef.current=dirty;},[dirty]);
+  useEffect(()=>{
+    const count=data?.notifications.filter(n=>!(n.isRead??n.is_read)).length??0;
+    if(previousUnread.current>0&&count>previousUnread.current)playSound("notify");
+    previousUnread.current=count;
+  },[data?.notifications,playSound]);
 
   const loadPreview = useCallback(async () => {
     const master = getCloudSession(); const id = sessionStorage.getItem("berco-vazio-preview-player");
@@ -140,6 +160,14 @@ function PlayerPage() {
     await rpc("player_log_roll",{p_token:current.token,p_payload:input});
     await refresh(true);
   };
+  const markNotification=async(id:string)=>{
+    if(preview)return;
+    const current=requirePlayerSession();if(!current)return;
+    await rpc("player_mark_notification",{p_token:current.token,p_notification_id:id});
+    await refresh(true);
+  };
+  const openTab=(next:Tab)=>{if(next!==tab)playSound("navigate");setTab(next);};
+  const openDice=()=>{playSound("click");setDiceOpen(true);};
 
   const rollAttribute=async(attr:OrdemAttribute)=>{const r=rollOrdemTest(attr,sheet.attributes[attr],0,0);setLastResult({label:`Teste de ${attr}`,dice:r.dice,chosenIndex:r.chosenIndex,chosen:r.chosen,bonus:0,total:r.total,mode:r.mode});await logRoll({label:`Atributo ${attr}`,formula:`${r.dice.length}d20 ${r.mode}`,payload:{...r},total:r.total,visibility});};
   const rollSkill=async(skillId:string)=>{const def=SKILLS.find(s=>s.id===skillId);if(!def)return;const skill=sheet.skills[skillId]??{training:"DESTREINADO" as const,otherBonus:0};const bonus=TRAINING_BONUS[skill.training]+Number(skill.otherBonus||0);const r=rollOrdemTest(def.attribute,sheet.attributes[def.attribute],TRAINING_BONUS[skill.training],Number(skill.otherBonus||0));setLastResult({label:skillId==="profissao"&&skill.customName?skill.customName:def.name,dice:r.dice,chosenIndex:r.chosenIndex,chosen:r.chosen,bonus,total:r.total,mode:r.mode});await logRoll({label:`Perícia ${def.name}`,formula:`${r.dice.length}d20 ${r.mode} + ${bonus}`,payload:{...r,skillId},total:r.total,visibility});};
@@ -151,36 +179,95 @@ function PlayerPage() {
 
   const state=normalizePublicState(data.publicState);
   const unread=data.notifications.filter(n=>!(n.isRead??n.is_read)).length;
-  const theme=themeFor(data.profile.roleType);
   const symbolUrl=data.assets.find(a=>(a.assetKey??a.asset_key)==="ordem-symbol")?.publicUrl??data.assets.find(a=>(a.assetKey??a.asset_key)==="ordem-symbol")?.public_url;
+  const transcendence=data.notifications.find(n=>n.kind==="TRANSCENDENCIA"&&!(n.isRead??n.is_read)&&n.id!==transcendDismissed)??null;
+  const rootStyle=accentVariables(preferences.accent) as CSSProperties;
+  const answerTranscendence=async()=>{
+    if(!transcendence)return;
+    playSound("click");
+    if(!preview)await markNotification(transcendence.id);
+    setTranscendDismissed(transcendence.id);
+    setSheetFocus("progression");
+    setTab("ficha");
+  };
 
-  return <div className={`min-h-screen ${theme.page}`}>
-    {showIntro&&<PlayerIntro name={data.profile.playerName} role={data.profile.roleType} symbolUrl={symbolUrl} skipFuture={skipIntro} onSkipFutureChange={updateIntroPreference} onDone={finishIntro}/>} 
-    <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${theme.header}`}><div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5"><div className={`flex size-10 items-center justify-center rounded-xl border ${theme.badge}`}><Shield className="size-5"/></div><div className="min-w-0"><p className="truncate font-semibold">{data.profile.characterName||data.profile.playerName}</p><p className="stamp truncate text-[9px] opacity-60">{data.profile.playerName} · {data.profile.roleType.replaceAll("_"," ")}</p></div><div className="ml-auto rounded-lg border border-white/10 bg-black/15 px-3 py-1.5 text-right"><p className="font-mono text-sm">DIA {state.day} · {state.time}</p>{state.shareLocation&&<p className="max-w-36 truncate text-[10px] opacity-60">{state.currentLocationName||"local não informado"}</p>}</div><Button size="sm" variant="ghost" aria-label={preview?"Fechar prévia":"Sair do terminal"} title={preview?"Fechar prévia":"Sair"} onClick={()=>{if(preview)window.close();else void logoutCloud().then(()=>window.location.assign("/"));}}><LogOut className="size-4"/></Button></div><nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2 sm:px-5">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>setTab(t.id)} className={`relative flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-colors ${tab===t.id?`${theme.active} border-white/10 shadow-sm`:"border-transparent opacity-60 hover:border-white/10 hover:bg-white/5 hover:opacity-100"}`}><Icon className="size-3.5"/>{t.label}{t.id==="inicio"&&unread>0&&<span className="ml-1 rounded-full bg-red-600 px-1.5 text-[9px] text-white">{unread}</span>}</button>})}</nav></header>
-    {preview&&<div className="sticky top-[105px] z-30 bg-route-amarelo/90 px-3 py-1 text-center text-xs font-semibold text-black">PRÉVIA DO MESTRE — somente leitura; notas privadas do player não são exibidas.</div>}
-    {pollError&&<div className="mx-auto mt-3 max-w-7xl px-3"><p className="rounded-lg border border-route-amarelo/50 bg-route-amarelo/10 p-2.5 text-xs">Cloud temporariamente sem sincronizar: {pollError}</p></div>}
-    <main className="mx-auto max-w-7xl px-3 py-4 sm:px-5 sm:py-6">
-      {tab==="inicio"&&<Home data={data} state={state} onTab={setTab} onReplay={()=>setShowIntro(true)} skipIntro={skipIntro} onSkipIntroChange={updateIntroPreference} onRead={async id=>{if(preview)return;const current=requirePlayerSession();if(!current)return;await rpc("player_mark_notification",{p_token:current.token,p_notification_id:id});await refresh(true);}}/>}
-      {tab==="ficha"&&<CharacterSheetPanel sheet={sheet} editable={!preview&&data.profile.canEditSheet} saveStatus={saveStatus} onChange={updateSheet} onRollAttribute={rollAttribute} onRollSkill={rollSkill} onRollAttack={rollAttack} onRollDamage={rollDamage}/>} 
-      {tab==="rolagens"&&<div className="space-y-3"><div className="flex justify-end gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Próximas: públicas</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Próximas: privadas</Button></div><DicePanel rolls={data.rolls} onLog={logRoll}/></div>}
-      {tab==="mapa"&&<FogMap playerId={data.profile.id} regions={data.mapRegions} reveals={data.mapReveals} assets={data.assets}/>} 
-      {tab==="pistas"&&<Clues clues={data.clues}/>} 
-      {tab==="documentos"&&<Documents documents={data.documents}/>} 
-      {tab==="anotacoes"&&<Notes notes={data.notes} preview={preview} onRefresh={()=>refresh(true)}/>} 
+  return <div className={`player-v2-shell min-h-screen ${preferences.intensity==="paranormal"?"player-v2-paranormal":"player-v2-sober"}`} style={rootStyle}>
+    {showIntro&&<PlayerIntro name={data.profile.playerName} role={data.profile.roleType} symbolUrl={symbolUrl} skipFuture={skipIntro} onSkipFutureChange={updateIntroPreference} onDone={finishIntro}/>}
+    {transcendence&&<TranscendenceOverlay title={transcendence.title} body={transcendence.body} onSound={()=>playSound("transcend")} onLater={()=>setTranscendDismissed(transcendence.id)} onAnswer={()=>void answerTranscendence()}/>}
+    <header className="player-v2-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-2xl">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-5">
+        <div className="player-avatar-shell flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-primary/30 bg-primary/10 text-primary">
+          {data.profile.avatarUrl?<img src={data.profile.avatarUrl} alt="" className="size-full object-cover"/>:<Shield className="size-5"/>}
+        </div>
+        <div className="min-w-0"><p className="truncate font-semibold">{data.profile.characterName||data.profile.playerName}</p><p className="stamp truncate text-[9px] text-muted-foreground">{data.profile.playerName} · {data.profile.roleType.replaceAll("_"," ")}</p></div>
+        <div className="ml-auto hidden rounded-xl border border-border/70 bg-background/35 px-3 py-1.5 text-right sm:block"><p className="font-mono text-sm">DIA {state.day} · {state.time}</p>{state.shareLocation&&<p className="max-w-44 truncate text-[10px] text-muted-foreground">{state.currentLocationName||"local não informado"}</p>}</div>
+        <Button size="icon" variant="ghost" aria-label="Abrir dados" title="Dados" onClick={openDice}><Dice5 className="size-4"/></Button>
+        <Button size="icon" variant="ghost" aria-label="Preferências" title="Preferências" onClick={()=>{playSound("click");setSettingsOpen(true);}}><Settings2 className="size-4"/></Button>
+        <Button size="icon" variant="ghost" aria-label={preview?"Fechar prévia":"Sair do terminal"} title={preview?"Fechar prévia":"Sair"} onClick={()=>{if(preview)window.close();else void logoutCloud().then(()=>window.location.assign("/"));}}><LogOut className="size-4"/></Button>
+      </div>
+      <nav className="player-v2-desktop-nav mx-auto hidden max-w-7xl items-center gap-1 px-5 pb-3 md:flex">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>openTab(t.id)} data-active={tab===t.id} className="player-v2-nav-item"><Icon className="size-4"/><span>{t.label}</span>{t.id==="inicio"&&unread>0&&<span className="player-v2-unread">{unread}</span>}</button>})}</nav>
+    </header>
+    {preview&&<div className="sticky top-[68px] z-30 bg-route-amarelo/90 px-3 py-1 text-center text-xs font-semibold text-black">PRÉVIA DO MESTRE — somente leitura; notas privadas do player não são exibidas.</div>}
+    {pollError&&<div className="mx-auto mt-3 max-w-7xl px-3"><p className="rounded-xl border border-route-amarelo/50 bg-route-amarelo/10 p-2.5 text-xs">Cloud temporariamente sem sincronizar: {pollError}</p></div>}
+    <main className="mx-auto max-w-7xl px-3 py-4 pb-28 sm:px-5 sm:py-6 md:pb-8">
+      <div key={tab} className="player-page-transition">
+        {tab==="inicio"&&<Home data={data} state={state} onTab={openTab} onDice={openDice} onSettings={()=>setSettingsOpen(true)} onReplay={()=>setShowIntro(true)} skipIntro={skipIntro} onSkipIntroChange={updateIntroPreference} onRead={markNotification}/>}
+        {tab==="ficha"&&<CharacterSheetPanel sheet={sheet} editable={!preview&&data.profile.canEditSheet} saveStatus={saveStatus} focusTarget={sheetFocus} onFocusConsumed={()=>setSheetFocus(null)} onChange={updateSheet} onRollAttribute={rollAttribute} onRollSkill={rollSkill} onRollAttack={rollAttack} onRollDamage={rollDamage}/>}
+        {tab==="investigacao"&&<Investigation view={investigationView} onView={setInvestigationView} data={data} preview={preview} onRefresh={()=>refresh(true)}/>}
+        {tab==="mapa"&&<FogMap playerId={data.profile.id} regions={data.mapRegions} reveals={data.mapReveals} assets={data.assets}/>}
+      </div>
     </main>
-    <OrdemRollResult result={lastResult}/>
+    <nav className="player-v2-bottom-nav md:hidden">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>openTab(t.id)} data-active={tab===t.id}><span className="relative"><Icon className="size-5"/>{t.id==="inicio"&&unread>0&&<i className="player-v2-dot"/>}</span><span>{t.label}</span></button>})}</nav>
+    <button type="button" className="player-dice-fab md:hidden" aria-label="Abrir dados" onClick={openDice}><Dice5 className="size-5"/></button>
+    {diceOpen&&<div className="player-dice-drawer" role="dialog" aria-modal="true" aria-label="Dados"><button className="player-dice-backdrop" aria-label="Fechar dados" onClick={()=>setDiceOpen(false)}/><section className="player-dice-sheet"><div className="flex items-center gap-3 border-b border-border/70 pb-3"><div><p className="stamp text-primary">Rolagens</p><h2 className="font-display text-2xl">Dados</h2></div><Button size="icon" variant="ghost" className="ml-auto" onClick={()=>setDiceOpen(false)}><X className="size-4"/></Button></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Ficha: pública</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Ficha: privada</Button></div><div className="mt-4 max-h-[72vh] overflow-y-auto pr-1"><DicePanel rolls={data.rolls} onLog={logRoll} soundEnabled={preferences.sound} soundVolume={preferences.volume} hideSoundToggle/></div></section></div>}
+    <PlayerPreferencesDialog open={settingsOpen} onOpenChange={setSettingsOpen} preferences={preferences} onChange={setPreferences} readOnly={preview}/>
+    <OrdemRollResult result={lastResult} soundEnabled={preferences.sound} soundVolume={preferences.volume}/>
   </div>;
 }
 
 function StandaloneLogin({warning,pin,setPin,busy,error,onLogin}:{warning?:string;pin:string;setPin:(v:string)=>void;busy:boolean;error:string;onLogin:()=>Promise<void>}){return <div className="flex min-h-screen items-center justify-center bg-[#05070a] p-4"><form className="player-terminal-card w-full max-w-sm border p-6 text-zinc-100" onSubmit={e=>{e.preventDefault();void onLogin();}}><div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl border border-cyan-800/70 bg-cyan-950/30 text-cyan-300"><Shield className="size-5"/></div><div><p className="stamp text-cyan-400">Terminal de jogador</p><p className="text-xs text-zinc-500">Acesso individual</p></div></div><h1 className="mt-5 text-2xl font-semibold">Operação Berço Vazio</h1><p className="mt-1 text-sm text-zinc-500">Digite o PIN entregue pelo mestre.</p><div className="mt-6"><Label htmlFor="player-pin">PIN</Label><Input id="player-pin" className="mt-1 h-11 bg-black text-base tracking-[.25em]" inputMode="numeric" autoComplete="off" autoFocus value={pin} disabled={busy} onChange={e=>setPin(e.target.value)}/></div><Button type="submit" className="mt-3 h-11 w-full" disabled={busy||!pin.trim()}><Cloud className="mr-1 size-4"/>{busy?"Conectando…":"Entrar"}</Button>{error&&<p role="alert" className="mt-2 rounded-lg border border-red-900/60 bg-red-950/30 p-2 text-xs text-red-300">{error}</p>}{warning&&<p className="mt-3 rounded-lg border border-amber-900/50 bg-amber-950/20 p-2 text-xs text-amber-300">{warning}</p>}</form></div>}
 
-function Home({data,state,onTab,onReplay,skipIntro,onSkipIntroChange,onRead}:{data:PlayerBootstrapData;state:ReturnType<typeof normalizePublicState>;onTab:(t:Tab)=>void;onReplay:()=>void;skipIntro:boolean;onSkipIntroChange:(v:boolean)=>void;onRead:(id:string)=>Promise<void>}){const sheet=normalizeSheet(data.sheet);const notifs=data.notifications.slice(0,8);return <div className="space-y-4"><section className="grid gap-3 sm:grid-cols-3"><Resource label="PV" current={sheet.resources.pv} max={sheet.resources.pvMax}/><Resource label="PE" current={sheet.resources.pe} max={sheet.resources.peMax}/><Resource label="SAN" current={sheet.resources.san} max={sheet.resources.sanMax}/></section><section className="player-terminal-card border p-5"><p className="stamp text-primary">Situação atual</p><h2 className="font-display text-2xl">DIA {state.day} · {state.time}</h2>{state.shareLocation&&<p className="mt-1 text-sm">📍 {state.currentLocationName||"Local não informado"}</p>}{state.objective&&<div className="mt-3 rounded-lg border border-primary/30 bg-primary/10 p-3"><p className="stamp text-primary">Objetivo compartilhado</p><p>{state.objective}</p></div>}<div className="mt-4 grid grid-cols-3 gap-2"><Button variant="outline" onClick={()=>onTab("mapa")}><Map className="mr-1 size-4"/>Mapa</Button><Button variant="outline" onClick={()=>onTab("pistas")}><ClipboardList className="mr-1 size-4"/>Pistas</Button><Button variant="outline" onClick={()=>onTab("rolagens")}><Dice5 className="mr-1 size-4"/>Dados</Button></div></section><section className="grid gap-4 lg:grid-cols-2"><div className="player-terminal-card border p-4"><div className="flex items-center"><div><p className="stamp text-primary">Notificações</p><h3 className="font-semibold">Terminal</h3></div><Button size="sm" variant="ghost" className="ml-auto" onClick={onReplay}>Rever intro</Button></div><div className="mt-3 space-y-2">{notifs.map(n=>{const read=n.isRead??n.is_read;return <button key={n.id} onClick={()=>void onRead(n.id)} className={`w-full rounded-lg border p-3 text-left ${read?"border-border opacity-60":"border-primary/50 bg-primary/5"}`}><div className="flex items-center"><Bell className="mr-2 size-3.5"/><b className="text-sm">{n.title}</b>{!read&&<span className="ml-auto size-2 rounded-full bg-primary"/>}</div><p className="mt-1 text-xs text-muted-foreground">{n.body}</p></button>})}{notifs.length===0&&<p className="text-sm text-muted-foreground">Nenhuma notificação.</p>}</div></div><div className="player-terminal-card border p-4"><p className="stamp text-primary">Últimas pistas</p><div className="mt-3 space-y-2">{data.clues.slice(0,5).map(c=><button key={c.id} className="w-full rounded-lg border border-border p-3 text-left" onClick={()=>onTab("pistas")}><b className="text-sm">{c.title}</b><p className="line-clamp-2 text-xs text-muted-foreground">{c.description}</p></button>)}{data.clues.length===0&&<p className="text-sm text-muted-foreground">Nenhuma pista recebida ainda.</p>}</div></div></section><section className="player-terminal-card border p-4"><div className="flex flex-wrap items-center gap-3"><div className="flex size-9 items-center justify-center rounded-lg border border-border bg-black/20"><Settings2 className="size-4 text-primary"/></div><div className="min-w-0 flex-1"><p className="stamp text-primary">Preferências do terminal</p><p className="text-sm font-semibold">Intro de identificação</p><p className="mt-0.5 text-xs text-muted-foreground">A primeira identificação sempre é exibida. Depois disso, você decide se quer rever a intro ao entrar.</p></div><label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs"><input type="checkbox" checked={skipIntro} onChange={e=>onSkipIntroChange(e.target.checked)}/>Pular intro nas próximas entradas</label><Button size="sm" variant="outline" onClick={onReplay}>Rever agora</Button></div></section></div>}
+function Home({data,state,onTab,onDice,onSettings,onReplay,skipIntro,onSkipIntroChange,onRead}:{data:PlayerBootstrapData;state:ReturnType<typeof normalizePublicState>;onTab:(t:Tab)=>void;onDice:()=>void;onSettings:()=>void;onReplay:()=>void;skipIntro:boolean;onSkipIntroChange:(v:boolean)=>void;onRead:(id:string)=>Promise<void>}){
+  const sheet=normalizeSheet(data.sheet);
+  const notifs=data.notifications.filter(n=>n.kind!=="TRANSCENDENCIA").slice(0,6);
+  const portrait=data.profile.avatarUrl||sheet.identity.avatarUrl;
+  return <div className="space-y-5">
+    <section className="player-home-hero">
+      <div className="player-home-identity">
+        <div className="player-home-portrait">{portrait?<img src={portrait} alt="" className="size-full object-cover"/>:<UserRound className="size-9"/>}</div>
+        <div className="min-w-0 flex-1"><p className="stamp text-primary">Dossiê ativo</p><h1 className="mt-1 truncate font-display text-3xl font-semibold sm:text-4xl">{data.profile.characterName||sheet.identity.name||data.profile.playerName}</h1><p className="mt-1 text-sm text-muted-foreground">{sheet.concept.origin||"Origem não definida"} · {sheet.concept.className}{sheet.concept.trail?" · "+sheet.concept.trail:""}</p></div>
+        <div className="player-nex-badge"><span>NEX</span><b>{sheet.concept.nex}%</b></div>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3"><Resource label="PV" current={sheet.resources.pv} max={sheet.resources.pvMax}/><Resource label="PE" current={sheet.resources.pe} max={sheet.resources.peMax}/><Resource label="SAN" current={sheet.resources.san} max={sheet.resources.sanMax}/></div>
+    </section>
+
+    <section className="player-session-card">
+      <div className="flex flex-wrap items-start gap-4"><div><p className="stamp text-primary">Agora</p><h2 className="mt-1 font-display text-2xl">DIA {state.day} · {state.time}</h2>{state.shareLocation&&<p className="mt-1 text-sm text-muted-foreground">📍 {state.currentLocationName||"Local não informado"}</p>}</div>{state.objective&&<div className="min-w-[220px] flex-1 rounded-xl border border-primary/25 bg-primary/[.06] p-3"><p className="stamp text-[9px] text-primary">Objetivo compartilhado</p><p className="mt-1 text-sm">{state.objective}</p></div>}</div>
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4"><Button variant="outline" onClick={()=>onTab("ficha")}><UserRound className="mr-1 size-4"/>Personagem</Button><Button variant="outline" onClick={onDice}><Dice5 className="mr-1 size-4"/>Dados</Button><Button variant="outline" onClick={()=>onTab("investigacao")}><Search className="mr-1 size-4"/>Investigar</Button><Button variant="outline" onClick={()=>onTab("mapa")}><Map className="mr-1 size-4"/>Mapa</Button></div>
+    </section>
+
+    <section className="grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
+      <div className="player-terminal-card border p-4 sm:p-5"><div className="flex items-center"><div><p className="stamp text-primary">Sinais recebidos</p><h3 className="font-display text-xl">Notificações</h3></div><Bell className="ml-auto size-5 text-primary"/></div><div className="mt-3 space-y-2">{notifs.map(n=>{const read=n.isRead??n.is_read;return <button key={n.id} onClick={()=>void onRead(n.id)} className={"player-notification w-full rounded-xl border p-3 text-left "+(read?"border-border/70 opacity-55":"border-primary/35 bg-primary/[.055]")}><div className="flex items-center gap-2"><b className="text-sm">{n.title}</b>{!read&&<span className="ml-auto size-2 rounded-full bg-primary"/>}</div><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{n.body}</p></button>})}{notifs.length===0&&<p className="py-4 text-sm text-muted-foreground">Nenhuma mensagem nova.</p>}</div></div>
+      <div className="player-terminal-card border p-4 sm:p-5"><div className="flex items-center"><div><p className="stamp text-primary">Investigação</p><h3 className="font-display text-xl">Pistas recentes</h3></div><ClipboardList className="ml-auto size-5 text-primary"/></div><div className="mt-3 space-y-2">{data.clues.slice(0,4).map(c=><button key={c.id} className="player-clue-preview w-full rounded-xl border border-border/70 p-3 text-left" onClick={()=>onTab("investigacao")}><b className="text-sm">{c.title}</b><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p></button>)}{data.clues.length===0&&<p className="py-4 text-sm text-muted-foreground">Nenhuma pista recebida ainda.</p>}</div></div>
+    </section>
+
+    <section className="player-preference-strip"><div className="flex min-w-0 flex-1 items-center gap-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[.06]"><Settings2 className="size-4 text-primary"/></div><div className="min-w-0"><p className="text-sm font-semibold">Seu terminal, do seu jeito</p><p className="text-xs text-muted-foreground">Cor, intensidade visual, som e volume ficam salvos neste aparelho.</p></div></div><Button size="sm" variant="outline" onClick={onSettings}>Personalizar</Button><Button size="sm" variant="ghost" onClick={onReplay}>Rever intro</Button><label className="flex items-center gap-2 text-[11px] text-muted-foreground"><input type="checkbox" checked={skipIntro} onChange={e=>onSkipIntroChange(e.target.checked)}/>Pular intro</label></section>
+  </div>;
+}
+
+function Investigation({view,onView,data,preview,onRefresh}:{view:InvestigationView;onView:(view:InvestigationView)=>void;data:PlayerBootstrapData;preview:boolean;onRefresh:()=>Promise<void>}){
+  const items:Array<{id:InvestigationView;label:string;icon:typeof ClipboardList;count:number}>=[
+    {id:"pistas",label:"Pistas",icon:ClipboardList,count:data.clues.length},
+    {id:"documentos",label:"Documentos",icon:BookOpen,count:data.documents.length},
+    {id:"anotacoes",label:"Anotações",icon:NotebookPen,count:data.notes.length},
+  ];
+  return <div className="space-y-4"><header className="player-investigation-header"><div><p className="stamp text-primary">Central de investigação</p><h1 className="font-display text-3xl">O que você descobriu</h1><p className="mt-1 text-sm text-muted-foreground">Pistas, arquivos e suas próprias anotações em um único lugar.</p></div></header><nav className="player-investigation-tabs">{items.map(item=>{const Icon=item.icon;return <button key={item.id} data-active={view===item.id} onClick={()=>onView(item.id)}><Icon className="size-4"/><span>{item.label}</span><i>{item.count}</i></button>})}</nav><div key={view} className="player-page-transition">{view==="pistas"?<Clues clues={data.clues}/>:view==="documentos"?<Documents documents={data.documents}/>:<Notes notes={data.notes} preview={preview} onRefresh={onRefresh}/>}</div></div>;
+}
 
 function Clues({clues}:{clues:PlayerBootstrapData["clues"]}){return <section><p className="stamp text-primary">Dossiê pessoal</p><h2 className="font-display text-3xl">Pistas recebidas</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{clues.map(c=><article key={c.id} className="player-terminal-card border p-4"><p className="font-semibold">{c.title}</p><p className="mt-2 text-sm leading-relaxed">{c.description}</p>{(c.documentTitle??c.document_title)&&<p className="mt-3 font-mono text-xs text-primary">DOCUMENTO: {c.documentTitle??c.document_title}</p>}{(c.privateMessage??c.private_message)&&<div className="mt-3 rounded-lg border border-primary/40 bg-primary/10 p-2 text-xs"><b>Mensagem do mestre:</b> {c.privateMessage??c.private_message}</div>}</article>)}{clues.length===0&&<Empty text="Nenhuma pista foi liberada para você ainda."/>}</div></section>}
 function Documents({documents}:{documents:CloudDocument[]}){return <section><p className="stamp text-primary">Arquivo liberado</p><h2 className="font-display text-3xl">Documentos</h2><div className="mt-4 grid gap-3 md:grid-cols-2">{documents.map(d=><article key={d.id} className="player-terminal-card border p-4"><BookOpen className="mb-3 size-5 text-primary"/><p className="font-semibold">{d.title}</p><p className="mt-2 text-sm text-muted-foreground">{d.description}</p>{(d.privateMessage??d.private_message)&&<p className="mt-3 rounded-lg border border-primary/40 bg-primary/10 p-2 text-xs">{d.privateMessage??d.private_message}</p>}</article>)}{documents.length===0&&<Empty text="Nenhum documento foi liberado para você ainda."/>}</div></section>}
 
 function Notes({notes,preview,onRefresh}:{notes:PlayerNote[];preview:boolean;onRefresh:()=>Promise<void>}){const [title,setTitle]=useState("");const [body,setBody]=useState("");const [share,setShare]=useState(false);const save=async()=>{if(preview||!body.trim())return;const current=requirePlayerSession();if(!current)return;await rpc("player_save_note",{p_token:current.token,p_payload:{title,body,tags:[],shareWithMaster:share}});setTitle("");setBody("");setShare(false);await onRefresh();};const remove=async(id:string)=>{if(preview)return;const current=requirePlayerSession();if(!current)return;if(!confirm("Excluir esta anotação?"))return;await rpc("player_delete_note",{p_token:current.token,p_note_id:id});await onRefresh();};return <section><p className="stamp text-primary">Caderno individual</p><h2 className="font-display text-3xl">Anotações</h2>{!preview&&<div className="player-terminal-card mt-4 border p-4"><Input placeholder="Título" value={title} onChange={e=>setTitle(e.target.value)}/><Textarea className="mt-2" placeholder="Sua anotação…" value={body} onChange={e=>setBody(e.target.value)}/><label className="mt-2 flex items-center gap-2 text-xs"><input type="checkbox" checked={share} onChange={e=>setShare(e.target.checked)}/>Compartilhar esta nota com o mestre</label><Button className="mt-3" disabled={!body.trim()} onClick={()=>void save()}>Salvar nota</Button></div>}<div className="mt-4 grid gap-3 md:grid-cols-2">{notes.map(n=><article key={n.id} className="player-terminal-card border p-4"><div className="flex items-center"><b>{n.title||"Nota"}</b><span className="ml-auto stamp text-[9px] text-muted-foreground">{(n.shareWithMaster??n.share_with_master)?"mestre pode ver":"privada"}</span></div><p className="mt-2 whitespace-pre-wrap text-sm">{n.body}</p>{!preview&&<Button size="sm" variant="ghost" className="mt-2 text-destructive" onClick={()=>void remove(n.id)}>Excluir</Button>}</article>)}{notes.length===0&&<Empty text="Nenhuma anotação criada."/>}</div></section>}
 
-function Resource({label,current,max}:{label:string;current:number;max:number}){const pct=max>0?Math.max(0,Math.min(100,current/max*100)):0;return <div className="player-terminal-card border p-3"><div className="flex items-end"><span className="stamp text-muted-foreground">{label}</span><b className="ml-auto font-mono text-xl">{current}/{max}</b></div><div className="mt-2 h-1.5 overflow-hidden rounded bg-secondary"><div className="h-full bg-primary" style={{width:`${pct}%`}}/></div></div>}
+function Resource({label,current,max}:{label:string;current:number;max:number}){const pct=max>0?Math.max(0,Math.min(100,current/max*100)):0;return <div className="player-resource"><div className="flex items-end"><span className="stamp text-muted-foreground">{label}</span><b className="ml-auto font-mono text-xl">{current}<span className="text-xs font-normal text-muted-foreground">/{max}</span></b></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary/80"><div className="player-resource-fill h-full rounded-full bg-primary" style={{width:pct+"%"}}/></div></div>}
 function Empty({text}:{text:string}){return <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">{text}</div>}
-function themeFor(role:PlayerRoleType){if(role==="AGENTE_DA_ORDEM")return{page:"bg-[#03080f] text-cyan-50",header:"border-cyan-900/50 bg-[#03080f]/90",badge:"border-cyan-500/60 bg-cyan-950/50 text-cyan-300",active:"bg-cyan-900/70 text-cyan-100"};if(role==="VILAO")return{page:"bg-[#0b0202] text-red-50",header:"border-red-950 bg-[#0b0202]/92",badge:"border-red-600/60 bg-red-950/50 text-red-400",active:"bg-red-950 text-red-100"};return{page:"bg-[#0c0a06] text-amber-50",header:"border-amber-950/70 bg-[#0c0a06]/92",badge:"border-amber-500/50 bg-amber-950/30 text-amber-300",active:"bg-amber-950/80 text-amber-100"};}

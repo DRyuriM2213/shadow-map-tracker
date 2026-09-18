@@ -8,7 +8,8 @@ export const PLAYER_ACCENTS = [
   { name: "Violeta", value: "#8d68d8" }, { name: "Âmbar", value: "#d29832" },
   { name: "Verde", value: "#3ea878" }, { name: "Azul", value: "#4b82d0" },
 ];
-const defaults: PlayerPreferences = { accent: PLAYER_ACCENTS[1].value, intensity: "sobrio", sound: true, volume: 0.45 };
+const DEFAULT_ACCENT = "#20b8cc";
+const defaults: PlayerPreferences = { accent: DEFAULT_ACCENT, intensity: "sobrio", sound: true, volume: 0.45 };
 
 function storageKey(profileId: string) { return `berco-player-preferences:${profileId}`; }
 function readPreferences(profileId: string) {
@@ -21,7 +22,7 @@ export function accentVariables(hex: string) {
   const valid = /^#[0-9a-f]{6}$/i.test(hex) ? hex : defaults.accent;
   const red = Number.parseInt(valid.slice(1, 3), 16), green = Number.parseInt(valid.slice(3, 5), 16), blue = Number.parseInt(valid.slice(5, 7), 16);
   const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
-  return { "--primary": valid, "--ring": valid, "--primary-foreground": luminance > 0.58 ? "#101317" : "#f7f9fb" } as Record<string, string>;
+  return { "--primary": valid, "--ring": valid, "--sidebar-primary": valid, "--primary-foreground": luminance > 0.58 ? "#101317" : "#f7f9fb" } as Record<string, string>;
 }
 
 export function usePlayerPreferences(profileId: string, readOnly: boolean) {
@@ -47,10 +48,21 @@ export function usePlayerAudio(preferences: PlayerPreferences) {
     if (context.current.state === "suspended") void context.current.resume();
     return context.current;
   }, [preferences.sound]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onFirstGesture = () => { unlock(); };
+    window.addEventListener("pointerdown", onFirstGesture, { once: true, passive: true });
+    window.addEventListener("keydown", onFirstGesture, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
+  }, [unlock]);
+
   const play = useCallback((kind: PlayerSound) => {
     const audio = unlock(); if (!audio || !preferences.sound) return;
     const now = audio.currentTime;
-    const tones = kind === "transcend" ? [[52, .45], [79, .55], [117, .7]] : kind === "impact" ? [[72, .18], [48, .24]] : kind === "dice" ? [[110, .13], [76, .2]] : kind === "notify" ? [[420, .1], [620, .16]] : kind === "navigate" ? [[260, .07]] : [[340, .055]];
+    const tones: Array<[number, number]> = kind === "transcend" ? [[52, .45], [79, .55], [117, .7]] : kind === "impact" ? [[72, .18], [48, .24]] : kind === "dice" ? [[110, .13], [76, .2]] : kind === "notify" ? [[420, .1], [620, .16]] : kind === "navigate" ? [[260, .07]] : [[340, .055]];
     tones.forEach(([frequency, duration], index) => {
       const oscillator = audio.createOscillator(), gain = audio.createGain(), start = now + index * .07;
       oscillator.type = kind === "transcend" ? "sawtooth" : kind === "dice" || kind === "impact" ? "triangle" : "sine";

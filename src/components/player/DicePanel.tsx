@@ -29,8 +29,8 @@ function storedSoundEnabled() {
   return window.localStorage.getItem(DICE_SOUND_KEY) !== "0";
 }
 
-function playDiceTone(kind: "roll" | "reveal" | "critical") {
-  if (typeof window === "undefined" || !storedSoundEnabled()) return;
+function playDiceTone(kind: "roll" | "reveal" | "critical", enabled = storedSoundEnabled(), volume = 0.45) {
+  if (typeof window === "undefined" || !enabled) return;
   try {
     const context = new AudioContext();
     const oscillator = context.createOscillator();
@@ -40,7 +40,7 @@ function playDiceTone(kind: "roll" | "reveal" | "critical") {
     oscillator.frequency.setValueAtTime(kind === "roll" ? 92 : kind === "critical" ? 620 : 330, now);
     oscillator.frequency.exponentialRampToValueAtTime(kind === "roll" ? 54 : kind === "critical" ? 920 : 470, now + (kind === "roll" ? 0.22 : 0.16));
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(kind === "critical" ? 0.075 : 0.045, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.003, (kind === "critical" ? 0.075 : 0.045) * Math.max(0, Math.min(1, volume)) / 0.45), now + 0.015);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "roll" ? 0.25 : 0.22));
     oscillator.connect(gain);
     gain.connect(context.destination);
@@ -52,25 +52,33 @@ function playDiceTone(kind: "roll" | "reveal" | "critical") {
   }
 }
 
-export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVisibilityChange }: {
+export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVisibilityChange, soundEnabled: controlledSoundEnabled, soundVolume = 0.45, onSoundEnabledChange, hideSoundToggle = false }: {
   rolls: CloudRoll[];
   visibility?: RollVisibility;
   onVisibilityChange?: (visibility: RollVisibility) => void;
+  soundEnabled?: boolean;
+  soundVolume?: number;
+  onSoundEnabledChange?: (enabled: boolean) => void;
+  hideSoundToggle?: boolean;
   onLog: (data: { label: string; formula: string; payload: Record<string, unknown>; total: number; visibility: RollVisibility }) => Promise<void>;
 }) {
   const [formula, setFormula] = useState("1d20");
   const [localVisibility, setLocalVisibility] = useState<RollVisibility>("PUBLICA");
   const [last, setLast] = useState<FormulaRoll | null>(null);
   const [animated, setAnimated] = useState<AnimatedFormulaRoll | null>(null);
-  const [soundEnabled, setSoundEnabled] = useState(storedSoundEnabled);
+  const [localSoundEnabled, setLocalSoundEnabled] = useState(storedSoundEnabled);
   const [error, setError] = useState("");
   const visibility = controlledVisibility ?? localVisibility;
+  const soundEnabled = controlledSoundEnabled ?? localSoundEnabled;
   const setVisibility = (value: RollVisibility) => onVisibilityChange ? onVisibilityChange(value) : setLocalVisibility(value);
 
   const toggleSound = () => {
     const next = !soundEnabled;
-    setSoundEnabled(next);
-    if (typeof window !== "undefined") window.localStorage.setItem(DICE_SOUND_KEY, next ? "1" : "0");
+    if (onSoundEnabledChange) onSoundEnabledChange(next);
+    else {
+      setLocalSoundEnabled(next);
+      if (typeof window !== "undefined") window.localStorage.setItem(DICE_SOUND_KEY, next ? "1" : "0");
+    }
   };
 
   const roll = async (f = formula) => {
@@ -92,7 +100,7 @@ export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVi
           <div className="flex flex-wrap justify-end gap-1.5">
             <Button size="sm" variant={visibility === "PUBLICA" ? "default" : "outline"} onClick={() => setVisibility("PUBLICA")}><Eye className="mr-1 size-3.5"/>Pública</Button>
             <Button size="sm" variant={visibility === "PRIVADA" ? "default" : "outline"} onClick={() => setVisibility("PRIVADA")}><Lock className="mr-1 size-3.5"/>Privada</Button>
-            <Button size="sm" variant="ghost" aria-label={soundEnabled ? "Desativar som dos dados" : "Ativar som dos dados"} title={soundEnabled ? "Som dos dados ligado" : "Som dos dados desligado"} onClick={toggleSound}>{soundEnabled ? <Volume2 className="size-4"/> : <VolumeX className="size-4"/>}<span className="hidden sm:inline">Som</span></Button>
+            {!hideSoundToggle&&<Button size="sm" variant="ghost" aria-label={soundEnabled ? "Desativar som dos dados" : "Ativar som dos dados"} title={soundEnabled ? "Som dos dados ligado" : "Som dos dados desligado"} onClick={toggleSound}>{soundEnabled ? <Volume2 className="size-4"/> : <VolumeX className="size-4"/>}<span className="hidden sm:inline">Som</span></Button>}
           </div>
         </div>
 
@@ -104,11 +112,11 @@ export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVi
 
       <section className="player-terminal-card border p-4 sm:p-5"><p className="stamp text-primary">Feed compartilhado</p><h2 className="font-display text-2xl">Rolagens recentes</h2><p className="mt-1 text-xs text-muted-foreground">Pública: todos veem. Privada: somente você e o mestre.</p><div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-1">{rolls.slice(0, 60).map(r => <div key={r.id} className="group rounded-xl border border-border/80 bg-background/18 p-3 text-sm transition hover:border-primary/25 hover:bg-background/30"><div className="flex items-center gap-2"><b className="min-w-0 truncate">{r.characterName || r.playerName || "Player"}</b><span className="rounded-full border border-border px-1.5 py-0.5 text-[8px] text-muted-foreground">{r.visibility}</span><b className="ml-auto font-mono text-2xl">{r.total ?? "—"}</b></div><p className="mt-1 truncate text-xs text-muted-foreground">{r.label} · {r.formula}</p></div>)}{rolls.length === 0 && <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">Nenhum dado rolado ainda.</p>}</div></section>
     </div>
-    {animated && <DramaticRollOverlay key={animated.id} label="Rolagem manual" formula={animated.roll.formula} dice={animated.roll.dice} total={animated.roll.total} modifier={animated.roll.modifier} onClose={() => setAnimated(null)}/>} 
+    {animated && <DramaticRollOverlay key={animated.id} label="Rolagem manual" formula={animated.roll.formula} dice={animated.roll.dice} total={animated.roll.total} modifier={animated.roll.modifier} onClose={() => setAnimated(null)} soundEnabled={soundEnabled} soundVolume={soundVolume}/>} 
   </>;
 }
 
-export function OrdemRollResult({ result, onClose }: { result: OrdemVisualResult | null; onClose?: () => void }) {
+export function OrdemRollResult({ result, onClose, soundEnabled, soundVolume = 0.45 }: { result: OrdemVisualResult | null; onClose?: () => void; soundEnabled?: boolean; soundVolume?: number }) {
   if (!result) return null;
   const dice = result.dice.map((value, index) => ({ value, sides: result.sides?.[index] ?? (result.mode === "SOMA" ? 6 : 20) }));
   return <DramaticRollOverlay
@@ -121,10 +129,12 @@ export function OrdemRollResult({ result, onClose }: { result: OrdemVisualResult
     chosenIndex={result.chosenIndex}
     note={result.note}
     onClose={onClose}
+    soundEnabled={soundEnabled}
+    soundVolume={soundVolume}
   />;
 }
 
-function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenIndex = -1, note, onClose }: {
+function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenIndex = -1, note, onClose, soundEnabled, soundVolume = 0.45 }: {
   label: string;
   formula: string;
   dice: Array<{ value: number; sides: number }>;
@@ -133,11 +143,14 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
   chosenIndex?: number;
   note?: string;
   onClose?: () => void;
+  soundEnabled?: boolean;
+  soundVolume?: number;
 }) {
   const [phase, setPhase] = useState<"rolling" | "reveal" | "hidden">("rolling");
   const critical = /cr[ií]tico/i.test(note ?? "") || /cr[ií]tico/i.test(label);
   const selectedIndex = chosenIndex >= 0 ? chosenIndex : 0;
   const selected = dice[selectedIndex] ?? dice[0] ?? { value: total, sides: 20 };
+  const soundOn = soundEnabled ?? storedSoundEnabled();
 
   const close = () => {
     setPhase("hidden");
@@ -145,10 +158,10 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
   };
 
   useEffect(() => {
-    playDiceTone("roll");
+    playDiceTone("roll", soundOn, soundVolume);
     const reveal = window.setTimeout(() => {
       setPhase("reveal");
-      playDiceTone(critical ? "critical" : "reveal");
+      playDiceTone(critical ? "critical" : "reveal", soundOn, soundVolume);
     }, 1150);
     const hide = window.setTimeout(close, 5200);
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
@@ -158,7 +171,7 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
       window.clearTimeout(hide);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [critical]);
+  }, [critical, soundOn, soundVolume]);
 
   if (phase === "hidden") return null;
   return <div className={`dice-overlay ${phase === "rolling" ? "is-rolling" : "is-revealed"} ${critical ? "is-critical" : ""}`} role="status" aria-live="polite">
