@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PolyhedralDie3D } from "@/components/player/PolyhedralDie3D";
 import { parseAndRollFormula, type FormulaRoll } from "@/lib/dice";
+import { playSoundFx, unlockSoundFx } from "@/lib/soundFx";
 import type { CloudRoll } from "@/lib/playerCloudTypes";
 import { Dice5, Eye, Lock, Volume2, VolumeX, X } from "lucide-react";
 
@@ -30,27 +31,12 @@ function storedSoundEnabled() {
 }
 
 function playDiceTone(kind: "roll" | "reveal" | "critical", enabled = storedSoundEnabled(), volume = 0.45) {
-  if (typeof window === "undefined" || !enabled) return;
-  try {
-    const context = new AudioContext();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    const now = context.currentTime;
-    oscillator.type = kind === "roll" ? "triangle" : "sine";
-    oscillator.frequency.setValueAtTime(kind === "roll" ? 92 : kind === "critical" ? 620 : 330, now);
-    oscillator.frequency.exponentialRampToValueAtTime(kind === "roll" ? 54 : kind === "critical" ? 920 : 470, now + (kind === "roll" ? 0.22 : 0.16));
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.003, (kind === "critical" ? 0.075 : 0.045) * Math.max(0, Math.min(1, volume)) / 0.45), now + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "roll" ? 0.25 : 0.22));
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start(now);
-    oscillator.stop(now + 0.28);
-    window.setTimeout(() => void context.close(), 420);
-  } catch {
-    // Som é um extra. Se o navegador bloquear WebAudio, a rolagem continua normalmente.
-  }
+  if (!enabled) return;
+  if (kind === "roll") playSoundFx("dice-roll", volume);
+  else if (kind === "critical") playSoundFx("dice-critical", volume);
+  else playSoundFx("dice-impact", volume);
 }
+
 
 export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVisibilityChange, soundEnabled: controlledSoundEnabled, soundVolume = 0.45, onSoundEnabledChange, hideSoundToggle = false }: {
   rolls: CloudRoll[];
@@ -83,6 +69,10 @@ export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVi
 
   const roll = async (f = formula) => {
     try {
+      if (soundEnabled) {
+        unlockSoundFx();
+        playDiceTone("roll", true, soundVolume);
+      }
       const result = parseAndRollFormula(f);
       setLast(result);
       setAnimated({ id: Date.now() + Math.random(), roll: result });
@@ -158,7 +148,6 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
   };
 
   useEffect(() => {
-    playDiceTone("roll", soundOn, soundVolume);
     const reveal = window.setTimeout(() => {
       setPhase("reveal");
       playDiceTone(critical ? "critical" : "reveal", soundOn, soundVolume);
