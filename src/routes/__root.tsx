@@ -5,6 +5,7 @@ import appCss from "../styles.css?url";
 import polishCss from "../polish.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { MapAreaManager } from "@/components/MapAreaManager";
+import { MapTokenManager } from "@/components/MapTokenManager";
 import { LiveMediaCaster } from "@/components/LiveMediaCaster";
 import { LiveMediaReceiver } from "@/components/player/LiveMediaReceiver";
 import { SessionDirectorPanel } from "@/components/SessionDirectorPanel";
@@ -51,5 +52,5 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  return <QueryClientProvider client={queryClient}><Outlet /><MapAreaManager /><LiveMediaCaster /><LiveMediaReceiver /><SessionDirectorPanel /></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><Outlet /><MapAreaManager /><MapTokenManager /><LiveMediaCaster /><LiveMediaReceiver /><SessionDirectorPanel /></QueryClientProvider>;
 }
