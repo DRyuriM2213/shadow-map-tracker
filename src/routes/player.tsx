@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,19 +8,26 @@ import { CharacterSheetPanel } from "@/components/player/CharacterSheetPanel";
 import { DicePanel, OrdemRollResult, type RollVisibility } from "@/components/player/DicePanel";
 import { FogMap } from "@/components/player/FogMap";
 import { PlayerIntro } from "@/components/player/PlayerIntro";
+import { PlayerPreferencesDialog } from "@/components/player/PlayerPreferencesDialog";
+import { TranscendenceOverlay } from "@/components/player/TranscendenceOverlay";
+import { accentVariables, usePlayerAudio, usePlayerPreferences } from "@/hooks/usePlayerExperience";
 import { SKILLS, TRAINING_BONUS, normalizeSheet, type CharacterSheetData, type OrdemAttribute } from "@/data/ordemRules";
 import { combatAttackById } from "@/data/combatRules";
 import { isCritical, parseAndRollFormula, rollOrdemTest, uid } from "@/lib/dice";
 import { cloudConfigured, getCloudSession, loginCloud, logoutCloud, requirePlayerSession, rpc } from "@/lib/cloud";
 import type { CloudDocument, CloudNotification, CloudRoll, PlayerBootstrapData, PlayerNote, PlayerRoleType } from "@/lib/playerCloudTypes";
 import { normalizePublicState } from "@/lib/playerCloudTypes";
-import { Bell, BookOpen, ClipboardList, Cloud, Dice5, FileText, LogOut, Map, NotebookPen, Settings2, Shield, UserRound } from "lucide-react";
+import { Bell, BookOpen, ClipboardList, Cloud, Dice5, FileText, LogOut, Map, NotebookPen, Search, Settings2, Shield, UserRound, X } from "lucide-react";
 
 export const Route = createFileRoute("/player")({ component: PlayerPage });
 
-type Tab = "inicio" | "ficha" | "rolagens" | "mapa" | "pistas" | "documentos" | "anotacoes";
+type Tab = "inicio" | "ficha" | "investigacao" | "mapa";
+type InvestigationView = "pistas" | "documentos" | "anotacoes";
 const TABS: Array<{id:Tab;label:string;icon:typeof Shield}> = [
-  {id:"inicio",label:"Início",icon:Shield},{id:"ficha",label:"Ficha",icon:UserRound},{id:"rolagens",label:"Rolagens",icon:Dice5},{id:"mapa",label:"Mapa",icon:Map},{id:"pistas",label:"Pistas",icon:ClipboardList},{id:"documentos",label:"Documentos",icon:FileText},{id:"anotacoes",label:"Anotações",icon:NotebookPen},
+  {id:"inicio",label:"Início",icon:Shield},
+  {id:"ficha",label:"Personagem",icon:UserRound},
+  {id:"investigacao",label:"Investigação",icon:Search},
+  {id:"mapa",label:"Mapa",icon:Map},
 ];
 
 function PlayerPage() {
@@ -42,8 +49,21 @@ function PlayerPage() {
   const [lastResult, setLastResult] = useState<null|{label:string;dice:number[];chosenIndex:number;chosen:number;bonus:number;total:number;mode:string;note?:string}>(null);
   const [visibility, setVisibility] = useState<RollVisibility>("PUBLICA");
   const [pollError, setPollError] = useState("");
+  const [investigationView, setInvestigationView] = useState<InvestigationView>("pistas");
+  const [diceOpen, setDiceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [transcendDismissed, setTranscendDismissed] = useState<string | null>(null);
+  const [sheetFocus, setSheetFocus] = useState<"progression" | null>(null);
+  const [preferences, setPreferences] = usePlayerPreferences(data?.profile.id ?? "guest", preview);
+  const { play: playSound } = usePlayerAudio(preferences);
+  const previousUnread = useRef(0);
 
   useEffect(()=>{dirtyRef.current=dirty;},[dirty]);
+  useEffect(()=>{
+    const count=data?.notifications.filter(n=>!(n.isRead??n.is_read)).length??0;
+    if(previousUnread.current>0&&count>previousUnread.current)playSound("notify");
+    previousUnread.current=count;
+  },[data?.notifications,playSound]);
 
   const loadPreview = useCallback(async () => {
     const master = getCloudSession(); const id = sessionStorage.getItem("berco-vazio-preview-player");
@@ -140,6 +160,14 @@ function PlayerPage() {
     await rpc("player_log_roll",{p_token:current.token,p_payload:input});
     await refresh(true);
   };
+  const markNotification=async(id:string)=>{
+    if(preview)return;
+    const current=requirePlayerSession();if(!current)return;
+    await rpc("player_mark_notification",{p_token:current.token,p_notification_id:id});
+    await refresh(true);
+  };
+  const openTab=(next:Tab)=>{if(next!==tab)playSound("navigate");setTab(next);};
+  const openDice=()=>{playSound("click");setDiceOpen(true);};
 
   const rollAttribute=async(attr:OrdemAttribute)=>{const r=rollOrdemTest(attr,sheet.attributes[attr],0,0);setLastResult({label:`Teste de ${attr}`,dice:r.dice,chosenIndex:r.chosenIndex,chosen:r.chosen,bonus:0,total:r.total,mode:r.mode});await logRoll({label:`Atributo ${attr}`,formula:`${r.dice.length}d20 ${r.mode}`,payload:{...r},total:r.total,visibility});};
   const rollSkill=async(skillId:string)=>{const def=SKILLS.find(s=>s.id===skillId);if(!def)return;const skill=sheet.skills[skillId]??{training:"DESTREINADO" as const,otherBonus:0};const bonus=TRAINING_BONUS[skill.training]+Number(skill.otherBonus||0);const r=rollOrdemTest(def.attribute,sheet.attributes[def.attribute],TRAINING_BONUS[skill.training],Number(skill.otherBonus||0));setLastResult({label:skillId==="profissao"&&skill.customName?skill.customName:def.name,dice:r.dice,chosenIndex:r.chosenIndex,chosen:r.chosen,bonus,total:r.total,mode:r.mode});await logRoll({label:`Perícia ${def.name}`,formula:`${r.dice.length}d20 ${r.mode} + ${bonus}`,payload:{...r,skillId},total:r.total,visibility});};
