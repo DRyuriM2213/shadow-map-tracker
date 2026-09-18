@@ -120,7 +120,7 @@ export interface GuidedPower {
 }
 
 const commonPowers: GuidedPower[] = [
-  { id: "treinamento-pericia", name: "Treinamento em Perícia", hint: "Aumenta o treinamento de duas perícias.", repeatable: true },
+  { id: "treinamento-pericia", name: "Treinamento em Perícia", hint: "Escolha duas perícias: você pode aprender novas como Treinado (+5) ou, se o NEX permitir, elevar o grau de perícias que já possui.", repeatable: true },
 ];
 
 export const CLASS_POWERS: Record<OrdemBaseClass, GuidedPower[]> = {
