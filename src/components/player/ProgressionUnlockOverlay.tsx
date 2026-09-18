@@ -1,18 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp } from "lucide-react";
 
 export function ProgressionUnlockOverlay({ nex, unlocks, onClose }: { nex: number; unlocks: string[]; onClose: () => void }) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") closeRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, []);
   return <div className="progression-unlock-overlay" role="dialog" aria-modal="true" aria-label={"NEX "+nex+"% alcançado"}>
     <div className="progression-unlock-rings" aria-hidden="true"><i/><i/><i/></div>
     <div className="progression-unlock-card">

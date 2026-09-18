@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { availableAttacks, combatDefense } from "@/data/combatRules";
 import { TRAINING_BONUS, type CharacterSheetData } from "@/data/ordemRules";
@@ -17,16 +17,18 @@ export function PlayerCombatMode({ sheet, onClose, onRollAttack, onRollDamage, o
   const pe = percent(sheet.resources.pe, sheet.resources.peMax);
   const san = percent(sheet.resources.san, sheet.resources.sanMax);
 
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") closeRef.current(); };
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, []);
 
   return <div className="combat-mode-overlay" role="dialog" aria-modal="true" aria-label="Modo Combate">
     <div className="combat-mode-grid" aria-hidden="true"/>
@@ -67,7 +69,7 @@ export function PlayerCombatMode({ sheet, onClose, onRollAttack, onRollDamage, o
 }
 
 function Vital({ icon: Icon, label, current, max, pct }: { icon: typeof HeartPulse; label: string; current: number; max: number; pct: number }) {
-  return <div className="combat-vital"><div className="flex items-center gap-2"><Icon className="size-4 text-primary"/><span>{label}</span><b className="ml-auto">{current}<small>/{max}</small></b></div><div className="combat-vital-track"><i style={{ width: pct + "%" }}/></div></div>;
+  return <div className="combat-vital" data-low={max > 0 && pct <= 25 ? "true" : "false"}><div className="flex items-center gap-2"><Icon className="size-4 text-primary"/><span>{label}</span><b className="ml-auto">{current}<small>/{max}</small></b></div><div className="combat-vital-track"><i style={{ width: pct + "%" }}/></div></div>;
 }
 function Reaction({ label, value, enabled, onClick }: { label: string; value: string; enabled: boolean; onClick?: () => void }) {
   const Tag = onClick && enabled ? "button" : "div";

@@ -12,6 +12,7 @@ export type SoundFxKind =
 
 let sharedContext: AudioContext | null = null;
 let noiseBuffer: AudioBuffer | null = null;
+let masterBus: DynamicsCompressorNode | null = null;
 
 function getContext() {
   if (typeof window === "undefined") return null;
@@ -35,27 +36,36 @@ export function playSoundFx(kind: SoundFxKind, volume = 0.5) {
   const now = context.currentTime;
 
   if (kind === "dice-roll") {
-    const ticks = [0, .045, .095, .15, .215, .29, .375, .47, .575, .69, .82];
+    // Camadas curtas de contato + um corpo grave simulam um dado quicando
+    // sobre uma mesa, sem depender de arquivos de áudio externos.
+    noiseSweep(context, now, 185, 92, .92, level * .045);
+    const ticks = [0, .042, .09, .145, .208, .282, .366, .46, .565, .68, .805, .91];
     ticks.forEach((offset, index) => {
-      noiseHit(context, now + offset, 720 + index * 72, .018 + index * .002, level * (.22 - index * .008));
-      if (index % 3 === 0) tone(context, now + offset, 95 + index * 4, .035, level * .055, "triangle", .62);
+      const decay = Math.max(.075, .19 - index * .0085);
+      const pitch = 680 + index * 61 + (index % 2 ? 55 : -25);
+      noiseHit(context, now + offset, pitch, .016 + index * .0016, level * decay);
+      if (index % 4 === 0) tone(context, now + offset, 104 - index * 2.4, .04, level * .045, "triangle", .7);
     });
     return;
   }
 
   if (kind === "dice-impact") {
-    noiseHit(context, now, 540, .085, level * .34);
-    noiseHit(context, now + .022, 1220, .035, level * .13);
-    tone(context, now, 76, .16, level * .18, "sine", .48);
+    // Pancada principal + dois micro-quiques dão sensação física ao assentamento.
+    noiseHit(context, now, 470, .095, level * .29);
+    noiseHit(context, now + .018, 1180, .034, level * .105);
+    tone(context, now, 72, .18, level * .155, "sine", .46);
+    noiseHit(context, now + .072, 760, .028, level * .082);
+    noiseHit(context, now + .132, 910, .022, level * .048);
     return;
   }
 
   if (kind === "dice-critical") {
-    noiseHit(context, now, 620, .09, level * .36);
-    tone(context, now, 70, .2, level * .2, "sine", .42);
-    tone(context, now + .045, 392, .28, level * .095, "sine", 1.5);
-    tone(context, now + .11, 587, .34, level * .08, "sine", 1.35);
-    tone(context, now + .19, 784, .4, level * .07, "sine", 1.2);
+    noiseHit(context, now, 500, .1, level * .31);
+    tone(context, now, 68, .22, level * .17, "sine", .4);
+    noiseHit(context, now + .07, 810, .03, level * .075);
+    tone(context, now + .055, 392, .3, level * .085, "sine", 1.5);
+    tone(context, now + .125, 587, .36, level * .072, "sine", 1.35);
+    tone(context, now + .205, 784, .42, level * .06, "sine", 1.18);
     return;
   }
 
@@ -109,7 +119,7 @@ function tone(context: AudioContext, start: number, frequency: number, duration:
   gain.gain.exponentialRampToValueAtTime(Math.max(.0002, volume), start + Math.min(.012, duration * .2));
   gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
   oscillator.connect(gain);
-  gain.connect(context.destination);
+  gain.connect(outputNode(context));
   oscillator.start(start);
   oscillator.stop(start + duration + .02);
 }
@@ -140,7 +150,7 @@ function noiseHit(context: AudioContext, start: number, frequency: number, durat
   gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
   source.connect(filter);
   filter.connect(gain);
-  gain.connect(context.destination);
+  gain.connect(outputNode(context));
   source.start(start, 0, Math.min(duration + .03, source.buffer.duration));
   source.stop(start + duration + .04);
 }
@@ -159,7 +169,21 @@ function noiseSweep(context: AudioContext, start: number, from: number, to: numb
   gain.gain.exponentialRampToValueAtTime(.0001, start + duration);
   source.connect(filter);
   filter.connect(gain);
-  gain.connect(context.destination);
+  gain.connect(outputNode(context));
   source.start(start, 0, Math.min(duration + .04, source.buffer.duration));
   source.stop(start + duration + .05);
+}
+
+
+function outputNode(context: AudioContext) {
+  if (masterBus && masterBus.context === context) return masterBus;
+  const compressor = context.createDynamicsCompressor();
+  compressor.threshold.value = -14;
+  compressor.knee.value = 18;
+  compressor.ratio.value = 5;
+  compressor.attack.value = .003;
+  compressor.release.value = .18;
+  compressor.connect(context.destination);
+  masterBus = compressor;
+  return compressor;
 }

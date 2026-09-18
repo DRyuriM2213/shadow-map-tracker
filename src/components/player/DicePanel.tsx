@@ -69,11 +69,11 @@ export function DicePanel({ rolls, onLog, visibility: controlledVisibility, onVi
 
   const roll = async (f = formula) => {
     try {
+      const result = parseAndRollFormula(f);
       if (soundEnabled) {
         unlockSoundFx();
         playDiceTone("roll", true, soundVolume);
       }
-      const result = parseAndRollFormula(f);
       setLast(result);
       setAnimated({ id: Date.now() + Math.random(), roll: result });
       setError("");
@@ -148,6 +148,8 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
   };
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const reveal = window.setTimeout(() => {
       setPhase("reveal");
       playDiceTone(critical ? "critical" : "reveal", soundOn, soundVolume);
@@ -156,6 +158,7 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      document.body.style.overflow = previousOverflow;
       window.clearTimeout(reveal);
       window.clearTimeout(hide);
       window.removeEventListener("keydown", onKeyDown);
@@ -163,7 +166,7 @@ function DramaticRollOverlay({ label, formula, dice, total, modifier, chosenInde
   }, [critical, soundOn, soundVolume]);
 
   if (phase === "hidden") return null;
-  return <div className={`dice-overlay ${phase === "rolling" ? "is-rolling" : "is-revealed"} ${critical ? "is-critical" : ""}`} role="status" aria-live="polite">
+  return <div className={`dice-overlay ${phase === "rolling" ? "is-rolling" : "is-revealed"} ${critical ? "is-critical" : ""}`} role="dialog" aria-modal="true" aria-live="polite" aria-label={`${label}: ${phase === "rolling" ? "rolando" : `resultado ${total}`}`}>
     <button type="button" className="dice-overlay-backdrop" aria-label="Fechar resultado da rolagem" onClick={close}/>
     <div className="dice-arena">
       <button type="button" aria-label="Fechar resultado" className="dice-close" onClick={close}><X className="size-4"/></button>

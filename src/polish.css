@@ -2274,3 +2274,71 @@ button.combat-reaction.is-enabled {
   .webgl-die-stage,
   .board-lines line { animation:none !important; }
 }
+
+
+/* ============================ PLAYER V4.1 — audit polish ============================ */
+.player-resource[data-low="true"] {
+  border-color: color-mix(in oklch, #c94452 34%, var(--color-border));
+  background:
+    radial-gradient(circle at 100% 50%, rgba(190,42,55,.08), transparent 55%),
+    rgba(255,255,255,.018);
+}
+.player-resource[data-low="true"]::after {
+  content: "CRÍTICO";
+  position: absolute;
+  right: .7rem;
+  top: .55rem;
+  color: rgba(225,92,104,.7);
+  font-family: var(--font-mono);
+  font-size: .48rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.combat-vital[data-low="true"] {
+  border-color: rgba(211,76,87,.26);
+  background:
+    radial-gradient(circle at 85% 20%, rgba(211,76,87,.09), transparent 60%),
+    rgba(255,255,255,.025);
+}
+.combat-vital[data-low="true"] .combat-vital-track i {
+  animation: v41-low-resource 1.8s ease-in-out infinite;
+}
+.dice-arena {
+  isolation: isolate;
+}
+.dice-arena::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: 94px;
+  width: 230px;
+  height: 58px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,.55), transparent 70%);
+  filter: blur(7px);
+  opacity: .75;
+  pointer-events: none;
+}
+.dice-overlay.is-revealed .dice-arena::after {
+  animation: v41-dice-floor-hit .55s ease-out both;
+}
+.special-event-card,
+.progression-unlock-card {
+  text-wrap: balance;
+}
+@keyframes v41-low-resource {
+  0%,100% { filter: brightness(1); box-shadow: 0 0 14px rgba(211,76,87,.2); }
+  50% { filter: brightness(1.18); box-shadow: 0 0 23px rgba(211,76,87,.35); }
+}
+@keyframes v41-dice-floor-hit {
+  0% { transform: translateX(-50%) scale(.72); opacity: .35; }
+  45% { transform: translateX(-50%) scale(1.12); opacity: .88; }
+  100% { transform: translateX(-50%) scale(1); opacity: .75; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-resource[data-low="true"],
+  .combat-vital[data-low="true"] .combat-vital-track i,
+  .dice-overlay.is-revealed .dice-arena::after { animation: none !important; }
+}
