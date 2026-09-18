@@ -10,19 +10,24 @@ import { FogMap } from "@/components/player/FogMap";
 import { PlayerIntro } from "@/components/player/PlayerIntro";
 import { PlayerPreferencesDialog } from "@/components/player/PlayerPreferencesDialog";
 import { TranscendenceOverlay } from "@/components/player/TranscendenceOverlay";
+import { PlayerCombatMode } from "@/components/player/PlayerCombatMode";
+import { InvestigationBoard } from "@/components/player/InvestigationBoard";
+import { PlayerSpecialEventOverlay, type SpecialEventKind } from "@/components/player/PlayerSpecialEventOverlay";
+import { ProgressionUnlockOverlay } from "@/components/player/ProgressionUnlockOverlay";
 import { accentVariables, usePlayerAudio, usePlayerPreferences } from "@/hooks/usePlayerExperience";
 import { SKILLS, TRAINING_BONUS, normalizeSheet, type CharacterSheetData, type OrdemAttribute } from "@/data/ordemRules";
 import { combatAttackById } from "@/data/combatRules";
+import { MILESTONES } from "@/data/ordemProgression";
 import { isCritical, parseAndRollFormula, rollOrdemTest, uid } from "@/lib/dice";
 import { cloudConfigured, getCloudSession, loginCloud, logoutCloud, requirePlayerSession, rpc } from "@/lib/cloud";
 import type { CloudDocument, CloudNotification, CloudRoll, PlayerBootstrapData, PlayerNote, PlayerRoleType } from "@/lib/playerCloudTypes";
 import { normalizePublicState } from "@/lib/playerCloudTypes";
-import { Bell, BookOpen, ClipboardList, Cloud, Dice5, FileText, LogOut, Map, NotebookPen, Search, Settings2, Shield, UserRound, X } from "lucide-react";
+import { Bell, BookOpen, ClipboardList, Cloud, Dice5, FileText, LogOut, Map, Network, NotebookPen, Search, Settings2, Shield, Swords, UserRound, X } from "lucide-react";
 
 export const Route = createFileRoute("/player")({ component: PlayerPage });
 
 type Tab = "inicio" | "ficha" | "investigacao" | "mapa";
-type InvestigationView = "pistas" | "documentos" | "anotacoes";
+type InvestigationView = "pistas" | "documentos" | "anotacoes" | "quadro";
 const TABS: Array<{id:Tab;label:string;icon:typeof Shield}> = [
   {id:"inicio",label:"Início",icon:Shield},
   {id:"ficha",label:"Personagem",icon:UserRound},
@@ -54,6 +59,10 @@ function PlayerPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [transcendDismissed, setTranscendDismissed] = useState<string | null>(null);
   const [sheetFocus, setSheetFocus] = useState<"progression" | null>(null);
+  const [combatOpen, setCombatOpen] = useState(false);
+  const [specialDismissed, setSpecialDismissed] = useState<string | null>(null);
+  const [nexUnlock, setNexUnlock] = useState<{nex:number;unlocks:string[]} | null>(null);
+  const lastNexRef = useRef<number | null>(null);
   const [preferences, setPreferences] = usePlayerPreferences(data?.profile.id ?? "guest", preview);
   const { play: playSound } = usePlayerAudio(preferences);
   const previousUnread = useRef(0);
@@ -64,6 +73,17 @@ function PlayerPage() {
     if(previousUnread.current>0&&count>previousUnread.current)playSound("notify");
     previousUnread.current=count;
   },[data?.notifications,playSound]);
+  useEffect(()=>{
+    if(!data)return;
+    const current=sheet.concept.nex;
+    if(lastNexRef.current===null){lastNexRef.current=current;return;}
+    if(current>lastNexRef.current){
+      const unlocks=MILESTONES.filter(m=>m.nex===current).map(m=>m.label);
+      setNexUnlock({nex:current,unlocks});
+      playSound("notify");
+    }
+    lastNexRef.current=current;
+  },[data,sheet.concept.nex,playSound]);
 
   const loadPreview = useCallback(async () => {
     const master = getCloudSession(); const id = sessionStorage.getItem("berco-vazio-preview-player");
@@ -181,6 +201,8 @@ function PlayerPage() {
   const unread=data.notifications.filter(n=>!(n.isRead??n.is_read)).length;
   const symbolUrl=data.assets.find(a=>(a.assetKey??a.asset_key)==="ordem-symbol")?.publicUrl??data.assets.find(a=>(a.assetKey??a.asset_key)==="ordem-symbol")?.public_url;
   const transcendence=data.notifications.find(n=>n.kind==="TRANSCENDENCIA"&&!(n.isRead??n.is_read)&&n.id!==transcendDismissed)??null;
+  const specialKinds = new Set<SpecialEventKind>(["EVENTO_VISAO","EVENTO_SEGREDO","EVENTO_OBJETIVO","EVENTO_INTERFERENCIA"]);
+  const specialEvent=data.notifications.find(n=>specialKinds.has(n.kind as SpecialEventKind)&&!(n.isRead??n.is_read)&&n.id!==specialDismissed)??null;
   const rootStyle=accentVariables(preferences.accent) as CSSProperties;
   const answerTranscendence=async()=>{
     if(!transcendence)return;
@@ -190,8 +212,15 @@ function PlayerPage() {
     setSheetFocus("progression");
     setTab("ficha");
   };
+  const acknowledgeSpecial=async()=>{
+    if(!specialEvent)return;
+    playSound("click");
+    if(!preview)await markNotification(specialEvent.id);
+    setSpecialDismissed(specialEvent.id);
+  };
+  const openCombat=()=>{playSound("click");setCombatOpen(true);};
 
-  return <div className={`player-v2-shell min-h-screen ${preferences.intensity==="paranormal"?"player-v2-paranormal":"player-v2-sober"}`} style={rootStyle}>
+  return <div className={`player-v2-shell player-style-${preferences.visualStyle} min-h-screen ${preferences.intensity==="paranormal"?"player-v2-paranormal":"player-v2-sober"}`} style={rootStyle}>
     {showIntro&&<PlayerIntro name={data.profile.playerName} role={data.profile.roleType} symbolUrl={symbolUrl} skipFuture={skipIntro} onSkipFutureChange={updateIntroPreference} onDone={finishIntro}/>}
     {transcendence&&<TranscendenceOverlay title={transcendence.title} body={transcendence.body} onSound={()=>playSound("transcend")} onLater={()=>setTranscendDismissed(transcendence.id)} onAnswer={()=>void answerTranscendence()}/>}
     <header className="player-v2-header sticky top-0 z-40 border-b border-border/70 backdrop-blur-2xl">
@@ -201,7 +230,7 @@ function PlayerPage() {
         </div>
         <div className="min-w-0"><p className="truncate font-semibold">{data.profile.characterName||data.profile.playerName}</p><p className="stamp truncate text-[9px] text-muted-foreground">{data.profile.playerName} · {data.profile.roleType.replaceAll("_"," ")}</p></div>
         <div className="ml-auto hidden rounded-xl border border-border/70 bg-background/35 px-3 py-1.5 text-right sm:block"><p className="font-mono text-sm">DIA {state.day} · {state.time}</p>{state.shareLocation&&<p className="max-w-44 truncate text-[10px] text-muted-foreground">{state.currentLocationName||"local não informado"}</p>}</div>
-        <Button size="icon" variant="ghost" aria-label="Abrir dados" title="Dados" onClick={openDice}><Dice5 className="size-4"/></Button>
+        <Button size="icon" variant="ghost" aria-label="Modo combate" title="Modo combate" onClick={openCombat}><Swords className="size-4"/></Button><Button size="icon" variant="ghost" aria-label="Abrir dados" title="Dados" onClick={openDice}><Dice5 className="size-4"/></Button>
         <Button size="icon" variant="ghost" aria-label="Preferências" title="Preferências" onClick={()=>{playSound("click");setSettingsOpen(true);}}><Settings2 className="size-4"/></Button>
         <Button size="icon" variant="ghost" aria-label={preview?"Fechar prévia":"Sair do terminal"} title={preview?"Fechar prévia":"Sair"} onClick={()=>{if(preview)window.close();else void logoutCloud().then(()=>window.location.assign("/"));}}><LogOut className="size-4"/></Button>
       </div>
@@ -218,10 +247,10 @@ function PlayerPage() {
       </div>
     </main>
     <nav className="player-v2-bottom-nav md:hidden">{TABS.map(t=>{const Icon=t.icon;return <button key={t.id} onClick={()=>openTab(t.id)} data-active={tab===t.id}><span className="relative"><Icon className="size-5"/>{t.id==="inicio"&&unread>0&&<i className="player-v2-dot"/>}</span><span>{t.label}</span></button>})}</nav>
-    <button type="button" className="player-dice-fab md:hidden" aria-label="Abrir dados" onClick={openDice}><Dice5 className="size-5"/></button>
-    {diceOpen&&<div className="player-dice-drawer" role="dialog" aria-modal="true" aria-label="Dados"><button className="player-dice-backdrop" aria-label="Fechar dados" onClick={()=>setDiceOpen(false)}/><section className="player-dice-sheet"><div className="flex items-center gap-3 border-b border-border/70 pb-3"><div><p className="stamp text-primary">Rolagens</p><h2 className="font-display text-2xl">Dados</h2></div><Button size="icon" variant="ghost" className="ml-auto" onClick={()=>setDiceOpen(false)}><X className="size-4"/></Button></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Ficha: pública</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Ficha: privada</Button></div><div className="mt-4 max-h-[72vh] overflow-y-auto pr-1"><DicePanel rolls={data.rolls} onLog={logRoll} soundEnabled={preferences.sound} soundVolume={preferences.volume} hideSoundToggle/></div></section></div>}
+    <div className="player-mobile-actions md:hidden"><button type="button" className="player-combat-fab" aria-label="Abrir modo combate" onClick={openCombat}><Swords className="size-5"/></button><button type="button" className="player-dice-fab" aria-label="Abrir dados" onClick={openDice}><Dice5 className="size-5"/></button></div>
+    {diceOpen&&<div className="player-dice-drawer" role="dialog" aria-modal="true" aria-label="Dados"><button className="player-dice-backdrop" aria-label="Fechar dados" onClick={()=>setDiceOpen(false)}/><section className="player-dice-sheet"><div className="flex items-center gap-3 border-b border-border/70 pb-3"><div><p className="stamp text-primary">Rolagens</p><h2 className="font-display text-2xl">Dados</h2></div><Button size="icon" variant="ghost" className="ml-auto" onClick={()=>setDiceOpen(false)}><X className="size-4"/></Button></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant={visibility==="PUBLICA"?"default":"outline"} onClick={()=>setVisibility("PUBLICA")}>Ficha: pública</Button><Button size="sm" variant={visibility==="PRIVADA"?"default":"outline"} onClick={()=>setVisibility("PRIVADA")}>Ficha: privada</Button></div><div className="mt-4 max-h-[72vh] overflow-y-auto pr-1"><DicePanel rolls={data.rolls} onLog={logRoll} soundEnabled={preferences.sound} soundVolume={preferences.volume*preferences.diceVolume} hideSoundToggle/></div></section></div>}
     <PlayerPreferencesDialog open={settingsOpen} onOpenChange={setSettingsOpen} preferences={preferences} onChange={setPreferences} readOnly={preview}/>
-    <OrdemRollResult result={lastResult} soundEnabled={preferences.sound} soundVolume={preferences.volume}/>
+    <OrdemRollResult result={lastResult} soundEnabled={preferences.sound} soundVolume={preferences.volume*preferences.diceVolume}/>
   </div>;
 }
 
@@ -260,8 +289,9 @@ function Investigation({view,onView,data,preview,onRefresh}:{view:InvestigationV
     {id:"pistas",label:"Pistas",icon:ClipboardList,count:data.clues.length},
     {id:"documentos",label:"Documentos",icon:BookOpen,count:data.documents.length},
     {id:"anotacoes",label:"Anotações",icon:NotebookPen,count:data.notes.length},
+    {id:"quadro",label:"Quadro",icon:Network,count:data.clues.length+data.documents.length+data.notes.length},
   ];
-  return <div className="space-y-4"><header className="player-investigation-header"><div><p className="stamp text-primary">Central de investigação</p><h1 className="font-display text-3xl">O que você descobriu</h1><p className="mt-1 text-sm text-muted-foreground">Pistas, arquivos e suas próprias anotações em um único lugar.</p></div></header><nav className="player-investigation-tabs">{items.map(item=>{const Icon=item.icon;return <button key={item.id} data-active={view===item.id} onClick={()=>onView(item.id)}><Icon className="size-4"/><span>{item.label}</span><i>{item.count}</i></button>})}</nav><div key={view} className="player-page-transition">{view==="pistas"?<Clues clues={data.clues}/>:view==="documentos"?<Documents documents={data.documents}/>:<Notes notes={data.notes} preview={preview} onRefresh={onRefresh}/>}</div></div>;
+  return <div className="space-y-4"><header className="player-investigation-header"><div><p className="stamp text-primary">Central de investigação</p><h1 className="font-display text-3xl">O que você descobriu</h1><p className="mt-1 text-sm text-muted-foreground">Pistas, arquivos, hipóteses e conexões em um único lugar.</p></div></header><nav className="player-investigation-tabs">{items.map(item=>{const Icon=item.icon;return <button key={item.id} data-active={view===item.id} onClick={()=>onView(item.id)}><Icon className="size-4"/><span>{item.label}</span><i>{item.count}</i></button>})}</nav><div key={view} className="player-page-transition">{view==="pistas"?<Clues clues={data.clues}/>:view==="documentos"?<Documents documents={data.documents}/>:view==="anotacoes"?<Notes notes={data.notes} preview={preview} onRefresh={onRefresh}/>:<InvestigationBoard profileId={data.profile.id} clues={data.clues} documents={data.documents} notes={data.notes} readOnly={preview}/>}</div></div>;
 }
 
 function Clues({clues}:{clues:PlayerBootstrapData["clues"]}){return <section className="investigation-section"><div className="investigation-section-title"><div><p className="stamp text-primary">Dossiê pessoal</p><h2 className="font-display text-3xl">Pistas recebidas</h2><p>Fragmentos liberados pelo mestre. Nem toda pista significa que você já entendeu o que ela prova.</p></div><ClipboardList className="size-6 text-primary"/></div><div className="evidence-grid mt-4">{clues.map((c,index)=><article key={c.id} className="evidence-card"><div className="evidence-card-top"><span>EVIDÊNCIA {String(index+1).padStart(2,"0")}</span><i/></div><div className="evidence-pin" aria-hidden="true"/><h3>{c.title}</h3><p className="evidence-body">{c.description}</p>{(c.documentTitle??c.document_title)&&<div className="evidence-source"><FileText className="size-3.5"/><span>{c.documentTitle??c.document_title}</span></div>}{(c.privateMessage??c.private_message)&&<div className="master-whisper"><b>Nota do mestre</b><p>{c.privateMessage??c.private_message}</p></div>}</article>)}{clues.length===0&&<Empty text="Nenhuma pista foi liberada para você ainda."/>}</div></section>}
