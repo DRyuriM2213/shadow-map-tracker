@@ -15,11 +15,20 @@ import { Dice5, Minus, Plus, Sparkles, Trash2 } from "lucide-react";
 
 const SECTIONS = ["Identidade", "Conceito", "Progressão", "Atributos", "Recursos", "Perícias", "Ataques", "Poderes/Rituais", "Inventário"] as const;
 type Section = typeof SECTIONS[number];
+const GROUPS = [
+  { id: "Visão geral", sections: ["Identidade", "Conceito", "Recursos"] },
+  { id: "Treinamento", sections: ["Atributos", "Perícias"] },
+  { id: "Combate", sections: ["Ataques", "Inventário"] },
+  { id: "Paranormal", sections: ["Progressão", "Poderes/Rituais"] },
+] as const;
+type Group = typeof GROUPS[number]["id"];
 
-export function CharacterSheetPanel({ sheet, editable, saveStatus, onChange, onRollAttribute, onRollSkill, onRollAttack, onRollDamage }: {
+export function CharacterSheetPanel({ sheet, editable, saveStatus, focusTarget, onFocusConsumed, onChange, onRollAttribute, onRollSkill, onRollAttack, onRollDamage }: {
   sheet: CharacterSheetData;
   editable: boolean;
   saveStatus: string;
+  focusTarget?: "progression" | null;
+  onFocusConsumed?: () => void;
   onChange: (next: CharacterSheetData) => void;
   onRollAttribute: (attr: OrdemAttribute) => void;
   onRollSkill: (skillId: string) => void;
@@ -27,6 +36,7 @@ export function CharacterSheetPanel({ sheet, editable, saveStatus, onChange, onR
   onRollDamage: (attackId: string) => void;
 }) {
   const [section, setSection] = useState<Section>(() => sheet.concept.nex === 0 ? "Progressão" : "Identidade");
+  const [transcendPulse, setTranscendPulse] = useState(false);
   const creation = useMemo(() => creationPointsUsed(sheet.attributes), [sheet.attributes]);
   const pending = useMemo(() => pendingMilestones(sheet.concept.nex, sheet.progression.choices), [sheet.concept.nex, sheet.progression.choices]);
   const derived = useMemo(() => derivedResources({ className: sheet.concept.className, nex: sheet.concept.nex, attributes: sheet.attributes, choices: sheet.progression.choices }), [sheet.concept.className, sheet.concept.nex, sheet.attributes, sheet.progression.choices]);
@@ -70,22 +80,35 @@ export function CharacterSheetPanel({ sheet, editable, saveStatus, onChange, onR
     patch("attributes", next);
   };
 
-  const systemChoices = sheet.progression.choices.filter((choice) => choice.kind === "TRILHA" || choice.kind === "HABILIDADE_TRILHA" || choice.kind === "PODER" || choice.kind === "VERSATILIDADE");
+  useEffect(() => {
+    if (focusTarget !== "progression") return;
+    setSection("Progressão");
+    setTranscendPulse(true);
+    const scroll = window.setTimeout(() => document.getElementById("player-progression-focus")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    const clear = window.setTimeout(() => setTranscendPulse(false), 4200);
+    onFocusConsumed?.();
+    return () => { window.clearTimeout(scroll); window.clearTimeout(clear); };
+  }, [focusTarget, onFocusConsumed]);
 
-  return <div className="space-y-4">
+  const systemChoices = sheet.progression.choices.filter((choice) => choice.kind === "TRILHA" || choice.kind === "HABILIDADE_TRILHA" || choice.kind === "PODER" || choice.kind === "VERSATILIDADE");
+  const activeGroup = (GROUPS.find((group) => (group.sections as readonly string[]).includes(section))?.id ?? "Visão geral") as Group;
+  const activeSections = GROUPS.find((group) => group.id === activeGroup)?.sections ?? GROUPS[0].sections;
+
+  return <div className="player-character-sheet space-y-4">
     <div className="rounded-2xl border border-border bg-card/50 p-3 shadow-lg shadow-black/10 sm:p-4">
       <div className="flex flex-wrap items-center gap-3"><div className="min-w-0 flex-1"><p className="stamp text-primary">Ficha de personagem</p><p className="truncate font-semibold">{sheet.identity.name || "Agente sem nome"}</p></div><span className={`stamp text-[10px] ${saveStatus.includes("erro") ? "text-destructive" : "text-route-verde-claro"}`}>{saveStatus}</span></div>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"><Summary label="NEX" value={`${sheet.concept.nex}%`}/><Summary label="Classe" value={sheet.concept.className}/><Summary label="Trilha" value={sheet.concept.trail || "—"}/><Summary label="Elemento" value={elementLabel}/><Summary label="PE / rodada" value={sheet.concept.nex === 0 ? "—" : String(sheet.concept.pePerRound)}/><button type="button" onClick={() => setSection("Progressão")} className={`rounded-lg border p-2 text-left transition-colors ${creationMode || pending.length ? "border-route-amarelo/50 bg-route-amarelo/10" : "border-route-verde/30 bg-route-verde/5"}`}><p className="stamp text-[9px] text-muted-foreground">Progressão</p><p className="mt-1 text-sm font-semibold">{creationMode ? "criação pendente" : pending.length ? `${pending.length} pendente(s)` : "em dia"}</p></button></div>
       {(creationMode || pending.length > 0) && <button type="button" className="mt-3 flex w-full items-center gap-2 rounded-lg border border-route-amarelo/35 bg-route-amarelo/5 px-3 py-2 text-left text-xs text-route-amarelo" onClick={() => setSection("Progressão")}><Sparkles className="size-4"/><b>{creationMode ? "Conclua a criação guiada para entrar em NEX 5%." : `Você tem ${pending.length} escolha(s) liberada(s) pelo NEX.`}</b><span className="ml-auto underline">Abrir</span></button>}
     </div>
 
-    <nav className="flex gap-1 overflow-x-auto pb-1">{SECTIONS.map((item) => <button key={item} className={`shrink-0 rounded-lg border px-3 py-2 text-xs transition-colors ${section === item ? "border-primary/40 bg-primary text-primary-foreground" : "border-transparent bg-secondary/65 text-muted-foreground hover:border-border hover:text-foreground"}`} onClick={() => setSection(item)}>{item}</button>)}</nav>
+    <nav className="player-sheet-groups">{GROUPS.map((group) => <button key={group.id} type="button" data-active={activeGroup === group.id} onClick={() => setSection(group.sections[0] as Section)}>{group.id}</button>)}</nav>
+    <div className="player-sheet-subnav">{activeSections.map((item) => <button key={item} type="button" data-active={section === item} onClick={() => setSection(item as Section)}>{item}</button>)}</div>
 
     {section === "Identidade" && <Panel title="Identidade"><div className="grid gap-3 md:grid-cols-2"><TextField label="Nome do personagem" value={sheet.identity.name} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, name: value })}/><TextField label="Idade" value={sheet.identity.age} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, age: value })}/><TextField label="URL da imagem/avatar" value={sheet.identity.avatarUrl} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, avatarUrl: value })}/></div><LongField label="Aparência" value={sheet.identity.appearance} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, appearance: value })}/><LongField label="Personalidade" value={sheet.identity.personality} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, personality: value })}/><LongField label="Histórico" value={sheet.identity.history} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, history: value })}/><LongField label="Objetivo" value={sheet.identity.objective} editable={editable} onChange={(value) => patch("identity", { ...sheet.identity, objective: value })}/></Panel>}
 
     {section === "Conceito" && <Panel title="Conceito"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><TextField label="Origem" value={sheet.concept.origin} editable={editable && sheet.concept.freeMode} onChange={(value) => patch("concept", { ...sheet.concept, origin: value })}/><div><Label>Classe</Label>{sheet.concept.freeMode ? <select disabled={!editable} className="mt-1 w-full rounded-lg border border-input bg-background p-2 text-sm" value={sheet.concept.className} onChange={(event) => patch("concept", { ...sheet.concept, className: event.target.value as CharacterSheetData["concept"]["className"] })}><option>Não definida</option><option>Combatente</option><option>Especialista</option><option>Ocultista</option><option>Custom</option></select> : <div className="mt-1 rounded-lg border border-input bg-secondary/25 p-2 text-sm">{sheet.concept.className}</div>}</div>{sheet.concept.className === "Custom" && <TextField label="Classe custom" value={sheet.concept.customClass} editable={editable && sheet.concept.freeMode} onChange={(value) => patch("concept", { ...sheet.concept, customClass: value })}/>}<TextField label="Trilha" value={sheet.concept.trail} editable={editable && sheet.concept.freeMode} onChange={(value) => patch("concept", { ...sheet.concept, trail: value })}/><NumField label="NEX %" value={sheet.concept.nex} editable={editable && sheet.concept.freeMode} onChange={(value) => patch("concept", { ...sheet.concept, nex: value })}/><TextField label="Patente" value={sheet.concept.rank} editable={editable} onChange={(value) => patch("concept", { ...sheet.concept, rank: value })}/><NumField label="Deslocamento" value={sheet.concept.movement} editable={editable} onChange={(value) => patch("concept", { ...sheet.concept, movement: value })}/><NumField label="PE por rodada" value={sheet.concept.pePerRound} editable={editable && sheet.concept.freeMode} onChange={(value) => patch("concept", { ...sheet.concept, pePerRound: value })}/></div><p className="rounded-lg border border-border/70 bg-secondary/25 p-3 text-xs text-muted-foreground">No modo padrão, origem, classe, trilha e NEX são conduzidos pela criação/progressão para evitar escolhas impossíveis. O modo livre abaixo existe apenas para homebrew.</p><label className="mt-4 flex items-center gap-2 text-sm"><input type="checkbox" disabled={!editable} checked={sheet.concept.freeMode} onChange={(event) => patch("concept", { ...sheet.concept, freeMode: event.target.checked })}/>Modo livre/homebrew — libera edição manual dos campos derivados</label></Panel>}
 
-    {section === "Progressão" && <CharacterProgressionPanel sheet={sheet} editable={editable} onChange={onChange}/>} 
+    {section === "Progressão" && <div id="player-progression-focus" className={transcendPulse ? "transcend-progression-focus" : ""}><CharacterProgressionPanel sheet={sheet} editable={editable} onChange={onChange}/></div>} 
 
     {section === "Atributos" && <Panel title="Atributos"><div className="grid grid-cols-2 gap-3 sm:grid-cols-5">{ATTRIBUTES.map((attribute) => <div key={attribute.id} className="rounded-xl border border-border p-3 text-center"><p className="stamp text-muted-foreground">{attribute.id}</p><p className="text-xs">{attribute.label}</p><div className="mt-3 flex items-center justify-center gap-2"><Button type="button" size="icon" variant="outline" disabled={!attributesEditable || (!sheet.concept.freeMode && sheet.attributes[attribute.id] <= 0)} onClick={() => changeCreationAttribute(attribute.id, -1)}><Minus className="size-4"/></Button><span className="w-9 font-mono text-2xl font-bold">{sheet.attributes[attribute.id]}</span><Button type="button" size="icon" variant="outline" disabled={!attributesEditable || (!sheet.concept.freeMode && sheet.attributes[attribute.id] >= 3)} onClick={() => changeCreationAttribute(attribute.id, 1)}><Plus className="size-4"/></Button></div><Button size="sm" variant="ghost" className="mt-2 w-full" onClick={() => onRollAttribute(attribute.id)}><Dice5 className="mr-1 size-3.5"/>Rolar</Button></div>)}</div><div className={`mt-4 rounded-lg border p-3 text-sm ${sheet.concept.freeMode || creation.complete ? "border-route-verde/40" : "border-route-amarelo/60"}`}><b>Pontos de criação:</b> {creation.spent}/{creation.budget} usados · {creation.remaining} restantes. {creationMode ? "Finalize a distribuição no assistente de Progressão." : !sheet.concept.freeMode ? "Depois da criação, aumentos normais são feitos nos marcos de NEX 20/50/80/95." : "Modo livre ativo."}</div></Panel>}
 
